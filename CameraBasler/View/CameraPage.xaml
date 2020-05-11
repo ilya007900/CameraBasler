@@ -1,0 +1,105 @@
+﻿<Page x:Class="CameraBasler.View.CameraPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:local="clr-namespace:CameraBasler.View"
+      mc:Ignorable="d" 
+      d:DesignHeight="450" d:DesignWidth="800"
+      Title="CameraPage">
+
+    <Page.Resources>
+        <Style x:Key="ButtonFocusVisual">
+            <Setter Property="Control.Template">
+                <Setter.Value>
+                    <ControlTemplate>
+                        <Rectangle Margin="2" SnapsToDevicePixels="true" Stroke="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" StrokeThickness="1" StrokeDashArray="1 2"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <LinearGradientBrush x:Key="ButtonNormalBackground" EndPoint="0,1" StartPoint="0,0">
+            <GradientStop Color="#F3F3F3" Offset="0"/>
+            <GradientStop Color="#EBEBEB" Offset="0.5"/>
+            <GradientStop Color="#DDDDDD" Offset="0.5"/>
+            <GradientStop Color="#CDCDCD" Offset="1"/>
+        </LinearGradientBrush>
+        <SolidColorBrush x:Key="ButtonNormalBorder" Color="#FF707070"/>
+        <Style x:Key="ToggleButtonStyle1" TargetType="{x:Type ToggleButton}">
+            <Setter Property="FocusVisualStyle" Value="{StaticResource ButtonFocusVisual}"/>
+            <Setter Property="Background" Value="{StaticResource ButtonNormalBackground}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource ButtonNormalBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ToggleButton}">
+                        <StackPanel Orientation="Horizontal">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            <Border x:Name="on" Width="25" Height="25" Background="LightGray" CornerRadius="2,0,0,4" Margin="10,0,0,0">
+                                <TextBlock x:Name="onText" Text="On" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <Border x:Name="off" Width="25" Height="25" Background="LightGray" CornerRadius="0,2,4,0">
+                                <TextBlock x:Name="offText" Text="Off" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </StackPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsEnabled" Value="false">
+                                <Setter Property="Foreground" Value="#ADADAD"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="true">
+                                <Setter TargetName="on" Property="Background" Value="LightBlue"/>
+                                <Setter TargetName="onText" Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="False">
+                                <Setter TargetName="off" Property="Background" Value="LightBlue"/>
+                                <Setter TargetName="offText" Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Page.Resources>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="65*"></ColumnDefinition>
+            <ColumnDefinition Width="35*"></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition></RowDefinition>
+        </Grid.RowDefinitions>
+
+        <Image Name="CameraImage" Grid.Column="0" Grid.Row="0" Margin="10"></Image>
+        <GridSplitter Width="3"></GridSplitter>
+        <StackPanel Grid.Column="1" Grid.Row="0">
+            <StackPanel Orientation="Horizontal" Margin="10, 10">
+                <Label Name="CameraName" Content="{Binding Name}"></Label>
+            </StackPanel>
+            <TabControl Height="115" Margin="10">
+                <TabItem Header="Exposure">
+                    <Grid Background="#FFE5E5E5">
+                        <CheckBox Name="AutoExposure" Content="Auto" HorizontalAlignment="Left" Margin="116,10,0,0" VerticalAlignment="Top" Checked="AutoExposure_Checked" Unchecked="AutoExposure_Unchecked"/>
+                        <TextBox Name="ExposureValue" HorizontalAlignment="Left" Height="23" Margin="10,31,0,0" TextWrapping="Wrap" Text="Number" VerticalAlignment="Top" Width="184" PreviewTextInput="ExposureValue_PreviewTextInput" />
+                        <Slider Name="ExposureSlider" HorizontalAlignment="Left" Margin="10,59,0,0" VerticalAlignment="Top" Width="184" ValueChanged="ExposureSlider_ValueChanged"/>
+                    </Grid>
+                </TabItem>
+                <TabItem Header="Gain">
+                    <Grid Background="#FFE5E5E5">
+                        <CheckBox Name="AutoGain" Content="Auto" HorizontalAlignment="Left" Margin="116,10,0,0" VerticalAlignment="Top" Checked="AutoGain_Checked" Unchecked="AutoGain_Unchecked"/>
+                        <TextBox Name="GainValue" HorizontalAlignment="Left" Height="23" Margin="10,31,0,0" TextWrapping="Wrap" Text="Number" VerticalAlignment="Top" Width="184" PreviewTextInput="GainValue_PreviewTextInput" />
+                        <Slider Name="GainSlider" HorizontalAlignment="Left" Margin="10,59,0,0" VerticalAlignment="Top" Width="184" ValueChanged="GainSlider_ValueChanged"/>
+                    </Grid>
+                </TabItem>
+            </TabControl>
+            <StackPanel Orientation="Horizontal" Height="30" Margin="10">
+                <Label Content="Video:" Margin="5, 0"></Label>
+                <Button Content="Start" Width="90" Margin="5, 0" Click="StartButton_Click"/>
+                <Button Content="Stop" Width="90" Margin="5, 0" Click="StopButton_Click"/>
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</Page>
