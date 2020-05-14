@@ -1,9 +1,12 @@
 ﻿using Basler.Pylon;
+using CameraBasler.Events;
 using System;
+using System.Drawing;
+using System.Drawing.Imaging;
 
 namespace CameraBasler.Model
 {
-    public class CameraModel
+    public class CameraModel : IDisposable
     {
         private const string ExposureAutoModeOn = "Continuous";
         private const string ExposureAutoModeOff = "Off";
@@ -11,11 +14,20 @@ namespace CameraBasler.Model
         private const string GainAutoModeOff = "Off";
         private const string FriendlyNameKey = "FriendlyName";
 
-        private readonly ICamera camera;
+        private ICamera camera;
 
-        public event EventHandler<ImageGrabbedEventArgs> ImageGrabbed;
+        public event EventHandler<CameraBitmapEventArgs> ImageGrabbed;
+
+        public void Dispose()
+        {
+            camera.Close();
+            camera.Dispose();
+            camera = null;
+        }
 
         #region public properties
+
+        public bool IsOpen => camera?.IsOpen ?? false;
 
         public string Name => camera.CameraInfo[FriendlyNameKey];
 
@@ -96,15 +108,15 @@ namespace CameraBasler.Model
 
         #endregion
 
-        public CameraModel()
-        {
-            camera = new Camera();
-        }
-
         #region public methods
 
         public void Open()
         {
+            if (camera == null)
+            {
+                camera = new Camera();
+            }
+
             if (!camera.IsOpen)
             {
                 var openedCamera = camera.Open();
@@ -123,7 +135,7 @@ namespace CameraBasler.Model
         public void Start()
         {
             camera.StreamGrabber.ImageGrabbed += OnImageRecived;
-            camera.StreamGrabber.Start(GrabStrategy.LatestImages, GrabLoop.ProvidedByStreamGrabber);
+            camera.StreamGrabber.Start(GrabStrategy.OneByOne, GrabLoop.ProvidedByStreamGrabber);
         }
 
         public void Stop()
@@ -138,7 +150,29 @@ namespace CameraBasler.Model
 
         private void OnImageRecived(object sender, ImageGrabbedEventArgs e)
         {
-            ImageGrabbed?.Invoke(sender, e);
+            var bitmap = Convert(e.GrabResult);
+            ImageGrabbed?.Invoke(sender, new CameraBitmapEventArgs(bitmap));
+        }
+
+        #endregion
+
+        #region helpers
+
+        private static Bitmap Convert(IGrabResult grabResult)
+        {
+            var converter = new PixelDataConverter();
+            var bitmap = new Bitmap(grabResult.Width, grabResult.Height, PixelFormat.Format32bppRgb);
+            // Lock the bits of the bitmap.
+            var rectangle = new Rectangle(0, 0, bitmap.Width, bitmap.Height);
+            var bmpData = bitmap.LockBits(rectangle, ImageLockMode.ReadWrite, bitmap.PixelFormat);
+
+            // Place the pointer to the buffer of the bitmap.
+            converter.OutputPixelFormat = PixelType.BGRA8packed;
+            var ptrBmp = bmpData.Scan0;
+            converter.Convert(ptrBmp, bmpData.Stride * bitmap.Height, grabResult);
+            bitmap.UnlockBits(bmpData);
+
+            return bitmap;
         }
 
         #endregion
