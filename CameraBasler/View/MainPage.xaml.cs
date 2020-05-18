@@ -11,13 +11,13 @@ namespace CameraBasler.View
     /// <summary>
     /// Interaction logic for CameraPage.xaml
     /// </summary>
-    public partial class CameraPage : Page
+    public partial class MainPage : Page
     {
-        private readonly CameraViewModel viewModel;
+        private readonly MainPageViewModel viewModel;
 
-        public CameraPage()
+        public MainPage()
         {
-            viewModel = new CameraViewModel();
+            viewModel = new MainPageViewModel();
             DataContext = viewModel;
 
             InitializeComponent();
@@ -25,9 +25,9 @@ namespace CameraBasler.View
 
         private void CameraState_Click(object sender, RoutedEventArgs e)
         {
-            if (viewModel.IsCameraOpen)
+            if (viewModel.CameraViewModel.IsCameraOpen)
             {
-                viewModel.CloseCamera();
+                viewModel.CameraViewModel.CloseCamera();
                 CameraState.Content = "Off";
                 CameraState.Background = Brushes.Red;
             }
@@ -35,7 +35,7 @@ namespace CameraBasler.View
             {
                 try
                 {
-                    viewModel.OpenCamera();
+                    viewModel.CameraViewModel.OpenCamera();
                     CameraState.Content = "On";
                     CameraState.Background = Brushes.Green;
                 }
@@ -48,12 +48,12 @@ namespace CameraBasler.View
 
         private void StartButton_Click(object sender, RoutedEventArgs e)
         {
-            viewModel.StartGrab();
+            viewModel.StartVideo();
         }
 
         private void StopButton_Click(object sender, RoutedEventArgs e)
         {
-            viewModel.StopGrab();
+            viewModel.StopVideo();
         }
 
         private void CheckNumber_PreviewTextInput(object sender, TextCompositionEventArgs e)
@@ -75,10 +75,14 @@ namespace CameraBasler.View
         {
             EyeState.Content = "In progress";
             viewModel.PupilReactionViewModel.InProgress = true;
+            viewModel.ArduinoViewModel.ErrorMessage = string.Empty;
+            viewModel.ArduinoViewModel.SendInitCommand();
+            viewModel.ArduinoViewModel.SendIRLEDSwitchCommand(true);
         }
 
         private void StopEyeButton_Click(object sender, RoutedEventArgs e)
         {
+            viewModel.ArduinoViewModel.SendStopCommand();
             EyeState.Content = "Finished";
             viewModel.PupilReactionViewModel.InProgress = false;
         }
@@ -91,6 +95,16 @@ namespace CameraBasler.View
         private void ExecuteCommandButton_Click(object sender, RoutedEventArgs e)
         {
             viewModel.ArduinoViewModel.WriteCommand();
+        }
+
+        private void StartBrightnessButton_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void StopBrightnessButton_Click(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

@@ -1,8 +1,6 @@
 ﻿using CameraBasler.Events;
 using CameraBasler.Model;
-using System.IO;
-using System.Windows.Media.Imaging;
-using System.Windows.Threading;
+using System;
 
 namespace CameraBasler.ViewModel
 {
@@ -14,9 +12,6 @@ namespace CameraBasler.ViewModel
 
         private ExposureViewModel exposureViewModel;
         private GainViewModel gainViewModel;
-        private PupilReactionViewModel pupilReactionViewModel;
-
-        private BitmapImage image;
 
         private CameraModel Model
         {
@@ -46,29 +41,7 @@ namespace CameraBasler.ViewModel
                 gainViewModel = value;
                 OnPropertyChanged();
             }
-        }
-
-        public PupilReactionViewModel PupilReactionViewModel
-        {
-            get => pupilReactionViewModel;
-            set
-            {
-                pupilReactionViewModel = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public BitmapImage Image
-        {
-            get => image;
-            set
-            {
-                image = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public ArduinoViewModel ArduinoViewModel { get; }
+        } 
 
         public bool IsCameraOpen
         {
@@ -90,11 +63,7 @@ namespace CameraBasler.ViewModel
             }
         }
 
-        public CameraViewModel()
-        {
-            ArduinoViewModel = new ArduinoViewModel();
-            PupilReactionViewModel = new PupilReactionViewModel();
-        }
+        public event EventHandler<CameraBitmapEventArgs> OnImageRecived;
 
         public void OpenCamera()
         {
@@ -130,22 +99,7 @@ namespace CameraBasler.ViewModel
 
         private void Model_ImageGrabbed(object sender, CameraBitmapEventArgs e)
         {
-            //ImageWindow.DisplayImage(0, e.GrabResult);
-            var bitmapImage = Convert(e.Bitmap);
-            bitmapImage.Freeze();
-            Dispatcher.CurrentDispatcher.Invoke(() => Image = bitmapImage);
-        }
-
-        private static BitmapImage Convert(System.Drawing.Bitmap bitmap)
-        {
-            var bi = new BitmapImage();
-            bi.BeginInit();
-            var ms = new MemoryStream();
-            bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Bmp);
-            ms.Seek(0, SeekOrigin.Begin);
-            bi.StreamSource = ms;
-            bi.EndInit();
-            return bi;
+            OnImageRecived?.Invoke(sender, e);
         }
     }
 }

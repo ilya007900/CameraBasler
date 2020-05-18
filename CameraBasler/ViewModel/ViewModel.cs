@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 
 namespace CameraBasler.ViewModel
 {
-    public class ViewModel : INotifyPropertyChanged
+    public abstract class ViewModel : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler PropertyChanged;
 

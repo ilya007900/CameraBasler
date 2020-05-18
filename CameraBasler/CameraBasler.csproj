@@ -89,15 +89,21 @@
     <Compile Include="Converters\InverseBooleanConverter.cs" />
     <Compile Include="Events\CameraBitmapEventArgs.cs" />
     <Compile Include="Events\OneArgEvent.cs" />
+    <Compile Include="Model\ArduinoModel.cs" />
+    <Compile Include="Model\DiodModel.cs" />
+    <Compile Include="Model\PupilReactionModel.cs" />
     <Compile Include="ViewModel\ArduinoViewModel.cs" />
     <Compile Include="Model\CameraModel.cs" />
+    <Compile Include="ViewModel\BrightnessDistributionViewModel.cs" />
     <Compile Include="ViewModel\CameraViewModel.cs" />
+    <Compile Include="ViewModel\DiodViewModel.cs" />
     <Compile Include="ViewModel\ExposureViewModel.cs" />
     <Compile Include="ViewModel\GainViewModel.cs" />
+    <Compile Include="ViewModel\MainPageViewModel.cs" />
     <Compile Include="ViewModel\PupilReactionViewModel.cs" />
     <Compile Include="ViewModel\ViewModel.cs" />
-    <Compile Include="View\CameraPage.xaml.cs">
-      <DependentUpon>CameraPage.xaml</DependentUpon>
+    <Compile Include="View\MainPage.xaml.cs">
+      <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -111,7 +117,7 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Page Include="View\CameraPage.xaml">
+    <Page Include="View\MainPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

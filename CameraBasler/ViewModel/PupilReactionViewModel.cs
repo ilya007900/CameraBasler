@@ -1,51 +1,50 @@
-﻿namespace CameraBasler.ViewModel
+﻿using CameraBasler.Model;
+
+namespace CameraBasler.ViewModel
 {
     public class PupilReactionViewModel : ViewModel
     {
-        private byte startingBrightLevel = 32;
-        private double brightIncreaseCoefficient = 1.5;
-        private int thresholdBrightnessForLongPulses = 132;
-        private int averagePupilReactionTime = 150;
+        private readonly PupilReactionModel model;
 
         private bool inProgress;
         private bool showGraphics;
 
         public byte StartingBrightLevel
         {
-            get => startingBrightLevel;
+            get => model.StartingBrightLevel;
             set
             {
-                startingBrightLevel = value;
+                model.StartingBrightLevel = value;
                 OnPropertyChanged();
             }
         }
 
         public double BrightIncreaseCoefficient
         {
-            get => brightIncreaseCoefficient;
+            get => model.BrightIncreaseCoefficient;
             set
             {
-                brightIncreaseCoefficient = value;
+                model.BrightIncreaseCoefficient = value;
                 OnPropertyChanged();
             }
         }
 
         public int ThresholdBrightnessForLongPulses
         {
-            get => thresholdBrightnessForLongPulses;
+            get => model.ThresholdBrightnessForLongPulses;
             set
             {
-                thresholdBrightnessForLongPulses = value;
+                model.ThresholdBrightnessForLongPulses = value;
                 OnPropertyChanged();
             }
         }
 
         public int AveragePupilReactionTime
         {
-            get => averagePupilReactionTime;
+            get => model.AveragePupilReactionTime;
             set
             {
-                averagePupilReactionTime = value;
+                model.AveragePupilReactionTime = value;
                 OnPropertyChanged();
             }
         }
@@ -68,6 +67,11 @@
                 inProgress = value;
                 OnPropertyChanged();
             }
+        }
+
+        public PupilReactionViewModel()
+        {
+            model = new PupilReactionModel();
         }
     }
 }

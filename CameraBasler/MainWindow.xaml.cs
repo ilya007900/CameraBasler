@@ -11,7 +11,7 @@ namespace CameraBasler
         public MainWindow()
         {
             InitializeComponent();
-            Content = new CameraPage();
+            Content = new MainPage();
         }
     }
 }
