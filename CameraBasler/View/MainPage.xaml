@@ -4,7 +4,6 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
       xmlns:converters="clr-namespace:CameraBasler.Converters"
-      xmlns:viewModel="clr-namespace:CameraBasler.ViewModel"
       mc:Ignorable="d" 
       d:DesignHeight="600" d:DesignWidth="1050"
       Title="MainPage">
@@ -19,6 +18,7 @@
             <Setter Property="Margin" Value="5 3"></Setter>
         </Style>
         <converters:InverseBooleanConverter x:Key="InverseBooleanConverter"></converters:InverseBooleanConverter>
+        <converters:BooleanAndConverter x:Key="BooleanAndConverter"></converters:BooleanAndConverter>
     </Page.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
@@ -38,13 +38,15 @@
                     <Label Content="Camera state:"></Label>
                     <Button Name="CameraState" 
                         Width="50" 
-                        Background="Red" 
+                        Background="{Binding CameraViewModel.CameraStateButtonColor}" 
                         Foreground="White" 
-                        Content="Off"
-                        Click="CameraState_Click">
+                        Content="{Binding CameraViewModel.CameraStateButtonContent}"
+                        Command="{Binding CameraViewModel.ChangeCameraStateCommand}">
                     </Button>
                 </StackPanel>
-                <TabControl Name="CameraControl" Margin="10" IsEnabled="{Binding CameraViewModel.IsCameraOpen}">
+                <TabControl Name="CameraControl"
+                            Margin="10" 
+                            IsEnabled="{Binding CameraViewModel.IsCameraOpen}">
                     <TabItem Header="Exposure">
                         <StackPanel Background="#FFE5E5E5">
                             <CheckBox IsChecked="{Binding CameraViewModel.ExposureViewModel.IsAutoMode}" 
@@ -81,8 +83,16 @@
                 <WrapPanel IsEnabled="{Binding CameraViewModel.IsCameraOpen}" Orientation="Horizontal" Margin="10 0">
                     <Label Content="Video:" Margin="5, 0"></Label>
                     <WrapPanel>
-                        <Button Content="Start" Width="90" Margin="5" Click="StartButton_Click"/>
-                        <Button Content="Stop" Width="90" Margin="5" Click="StopButton_Click"/>
+                        <Button Content="Start"
+                                Width="90" 
+                                Margin="5"
+                                IsEnabled="{Binding CameraViewModel.IsGrabbing, Converter={StaticResource InverseBooleanConverter}}"
+                                Command="{Binding CameraViewModel.StartVideoCommand}"/>
+                        <Button Content="Stop" 
+                                Width="90" 
+                                Margin="5"
+                                IsEnabled="{Binding CameraViewModel.IsGrabbing}"
+                                Command="{Binding CameraViewModel.StopVideoCommand}"/>
                     </WrapPanel>
                 </WrapPanel>
                 <TabControl Name="CameraTasks" Margin="10, 5" IsEnabled="True">
@@ -95,10 +105,10 @@
                                     <ColumnDefinition Width="3*"></ColumnDefinition>
                                 </Grid.ColumnDefinitions>
                                 <ComboBox Grid.Column="0" ItemsSource="{Binding ArduinoViewModel.AvailablePorts}"/>
-                                <Button Grid.Column="1" 
-                                    Name="RefreshPortsButton"
-                                    Content="Refresh"
-                                    Click="RefreshPortsButton_Click">
+                                <Button Grid.Column="1"
+                                        Name="RefreshPortsButton"
+                                        Content="Refresh"
+                                        Command="{Binding ArduinoViewModel.RefreshPortsCommand}">
                                 </Button>
                             </Grid>
                             <Grid>
@@ -106,46 +116,49 @@
                                     <ColumnDefinition Width="5*"></ColumnDefinition>
                                     <ColumnDefinition Width="5*"></ColumnDefinition>
                                 </Grid.ColumnDefinitions>
-                                <Button Grid.Column="0" 
-                                    Name="ConnectButton" 
-                                    Margin="5" 
-                                    Click="ConnectButton_Click"
-                                    Content="Connect">
+                                <Button Grid.Column="0"
+                                        Name="ConnectButton"
+                                        Margin="5"
+                                        Command="{Binding ArduinoViewModel.ConnectCommand}"
+                                        IsEnabled="{Binding ArduinoViewModel.IsConnected, Converter={StaticResource InverseBooleanConverter}}"
+                                        Content="Connect">
                                 </Button>
-                                <Button Grid.Column="1" 
-                                    Name="DisconnectButton" 
-                                    Margin="5" 
-                                    Click="DisconnectButton_Click"
-                                    Content="Disconnect">
+                                <Button Grid.Column="1"
+                                        Name="DisconnectButton"
+                                        Margin="5"
+                                        IsEnabled="{Binding ArduinoViewModel.IsConnected}"
+                                        Command="{Binding ArduinoViewModel.DisconnectCommand}"
+                                        Content="Disconnect">
                                 </Button>
                             </Grid>
-                            <StackPanel IsEnabled="{Binding ArduinoViewModel.IsPortOpen}">
-                                <Label Content="Input Arduino Command:" Margin="5,5,5,0"></Label>
-                                <Grid Margin="5">
+                            <StackPanel IsEnabled="{Binding ArduinoViewModel.IsConnected}">
+                                <Label Content="Input Arduino Command:" Margin="5"></Label>
+                                <Grid Margin="5 0">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="7*"></ColumnDefinition>
                                         <ColumnDefinition Width="3*"></ColumnDefinition>
                                     </Grid.ColumnDefinitions>
                                     <TextBox Grid.Column="0" Text="{Binding ArduinoViewModel.Command}"/>
-                                    <Button Grid.Column="1" 
-                                        Name="ExecuteCommandButton" 
-                                        Content="Execute" 
-                                        Click="ExecuteCommandButton_Click">
+                                    <Button Grid.Column="1"
+                                            Name="ExecuteCommandButton"
+                                            Content="Execute"
+                                            Command="{Binding ArduinoViewModel.ExecuteCommand}">
                                     </Button>
                                 </Grid>
-                                <StackPanel Margin="5">
-                                    <Label>Recived data from port:</Label>
-                                    <TextBlock Text="{Binding ArduinoViewModel.RecivedData}"></TextBlock>
-                                </StackPanel>
-                                <TextBlock Text="{Binding ArduinoViewModel.ErrorMessage}"
-                                   Foreground="Red"
-                                   TextAlignment="Center"
-                                   Margin="10, 5">
-                                </TextBlock>
+                                <Label Content="Sended commands:" Margin="5 0"></Label>
+                                <ListBox Margin="5 0" Height="60"
+                                         ItemsSource="{Binding ArduinoViewModel.SendedCommands}">
+                                </ListBox>
                             </StackPanel>
                         </StackPanel>
                     </TabItem>
-                    <TabItem Header="Pupil Reaction Threshold">
+                    <TabItem Header="Pupil Reaction">
+                        <TabItem.IsEnabled>
+                            <MultiBinding Converter="{StaticResource BooleanAndConverter}">
+                                <Binding Path="CameraViewModel.IsCameraOpen"></Binding>
+                                <Binding Path="ArduinoViewModel.IsConnected"></Binding>
+                            </MultiBinding>
+                        </TabItem.IsEnabled>
                         <StackPanel Background="#FFE5E5E5">
                             <TextBlock Margin="0 3"
                                    FontWeight="Bold"
@@ -162,8 +175,8 @@
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="*"></RowDefinition>
                                     <RowDefinition Height="*"></RowDefinition>
-                                    <RowDefinition Height="*"></RowDefinition>
-                                    <RowDefinition Height="*"></RowDefinition>
+                                    <!--<RowDefinition Height="*"></RowDefinition>-->
+                                    <!--<RowDefinition Height="*"></RowDefinition>-->
                                 </Grid.RowDefinitions>
                                 <TextBlock Grid.Row="0" 
                                        Grid.Column="0" 
@@ -172,25 +185,25 @@
                                 </TextBlock>
                                 <TextBox Grid.Row="0"
                                      Grid.Column="1"
-                                     Text="{Binding PupilReactionViewModel.StartingBrightLevel}"
+                                     Text="{Binding PupilReactionViewModel.Model.StartingBrightLevel}"
                                      PreviewTextInput="CheckNumber_PreviewTextInput"
                                      VerticalAlignment="Center"/>
                                 <TextBlock Grid.Row="1"
                                        Grid.Column="0"
                                        Style="{StaticResource TableProperty}"
-                                       Text="Коэффициент роста яркости: ">
+                                       Text="Коэффициент роста яркости (k): ">
                                 </TextBlock>
                                 <TextBox Grid.Row="1"
                                      Grid.Column="1"
-                                     Text="{Binding PupilReactionViewModel.BrightIncreaseCoefficient}"
+                                     Text="{Binding PupilReactionViewModel.Model.BrightIncreaseCoefficient}"
                                      VerticalAlignment="Center">
                                 </TextBox>
-                                <TextBlock Grid.Row="2" 
+                                <!--<TextBlock Grid.Row="2" 
                                        Grid.Column="0"
                                        Style="{StaticResource TableProperty}"
                                        Text="Пороговая яркость для длинных импульсов: ">
-                                </TextBlock>
-                                <TextBox Grid.Row="2"
+                                </TextBlock>-->
+                                <!--<TextBox Grid.Row="2"
                                      Grid.Column="1"
                                      Text="{Binding PupilReactionViewModel.ThresholdBrightnessForLongPulses}"
                                      VerticalAlignment="Center">
@@ -199,39 +212,64 @@
                                        Grid.Column="0"
                                        Style="{StaticResource TableProperty}"
                                        Text="Среднее время реакции зрачка, мс: ">
-                                </TextBlock>
-                                <TextBlock Grid.Row="3" 
+                                </TextBlock>-->
+                                <!--<TextBlock Grid.Row="3" 
                                        Grid.Column="1" 
                                        Text="{Binding PupilReactionViewModel.AveragePupilReactionTime}" 
                                        VerticalAlignment="Center">
-                                </TextBlock>
+                                </TextBlock>-->
                             </Grid>
                             <Separator/>
-                            <CheckBox Margin="0, 5"
+                            <!--<CheckBox Margin="0, 5"
                                   IsChecked="{Binding PupilReactionViewModel.ShowGraphics}"
                                   HorizontalAlignment="Center"
                                   Content="Показать графики">
-                            </CheckBox>
-                            <Label HorizontalAlignment="Center" Name="EyeState"></Label>
+                            </CheckBox>-->
+                            <Label HorizontalAlignment="Center" 
+                                   Content="{Binding PupilReactionViewModel.State}">
+                            </Label>
                             <WrapPanel HorizontalAlignment="Center" Orientation="Horizontal">
                                 <Button IsEnabled="{Binding PupilReactionViewModel.InProgress, Converter={StaticResource InverseBooleanConverter}}"
-                                    Name="StartEyeButton"
-                                    Margin="5"
-                                    Width="90"
-                                    Click="StartEyeButton_Click"
-                                    Content="Start">
+                                        Margin="5"
+                                        Width="90"
+                                        Command="{Binding PupilReactionViewModel.StartCommand}"
+                                        Content="Start">
                                 </Button>
                                 <Button IsEnabled="{Binding PupilReactionViewModel.InProgress}"
-                                    Name="StopEyeButton"
-                                    Margin="5"
-                                    Width="90"
-                                    Click="StopEyeButton_Click"
-                                    Content="Stop">
+                                        Margin="5"
+                                        Width="90"
+                                        Command="{Binding PupilReactionViewModel.StopCommand}"
+                                        Content="Stop">
+                                </Button>
+                                <Button IsEnabled="{Binding PupilReactionViewModel.InProgress}"
+                                        Margin="5"
+                                        Width="90"
+                                        Command="{Binding PupilReactionViewModel.SnapshotCommand}"
+                                        Content="Snapshot">
+                                </Button>
+                            </WrapPanel>
+                            <WrapPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                                <Button IsEnabled="{Binding PupilReactionViewModel.InProgress}"
+                                        Margin="5"
+                                        Width="165"
+                                        Command="{Binding PupilReactionViewModel.IncreaseBrightCommand}">
+                                    <Button.Content>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding PupilReactionViewModel.CurrentBright, StringFormat='Увеличить яркость {0} в'}"></TextBlock>
+                                            <TextBlock Text="{Binding PupilReactionViewModel.Model.BrightIncreaseCoefficient, StringFormat=' {0} раз'}"></TextBlock>
+                                        </StackPanel>
+                                    </Button.Content>
                                 </Button>
                             </WrapPanel>
                         </StackPanel>
                     </TabItem>
                     <TabItem Header="Brightness Distribution">
+                        <TabItem.IsEnabled>
+                            <MultiBinding Converter="{StaticResource BooleanAndConverter}">
+                                <Binding Path="CameraViewModel.IsCameraOpen"></Binding>
+                                <Binding Path="ArduinoViewModel.IsConnected"></Binding>
+                            </MultiBinding>
+                        </TabItem.IsEnabled>
                         <StackPanel Background="#FFE5E5E5">
                             <TextBlock Margin="0 3"
                                    FontWeight="Bold"
@@ -275,17 +313,13 @@
                             </TextBlock>
                             <WrapPanel HorizontalAlignment="Center" Orientation="Horizontal">
                                 <Button IsEnabled="{Binding BrightnessDistributionViewModel.InProgress, Converter={StaticResource InverseBooleanConverter}}"
-                                    Name="StartBrightnessButton"
                                     Margin="5"
                                     Width="90"
-                                    Click="StartBrightnessButton_Click"
                                     Content="Start">
                                 </Button>
                                 <Button IsEnabled="{Binding BrightnessDistributionViewModel.InProgress}"
-                                    Name="StopBrightnessButton"
                                     Margin="5"
                                     Width="90"
-                                    Click="StopBrightnessButton_Click"
                                     Content="Stop">
                                 </Button>
                             </WrapPanel>

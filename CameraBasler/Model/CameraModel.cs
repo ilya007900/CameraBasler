@@ -1,35 +1,39 @@
-﻿using Basler.Pylon;
+﻿using Accord.Video.FFMPEG;
+using Basler.Pylon;
 using CameraBasler.Events;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.IO;
+using System.Linq;
 
 namespace CameraBasler.Model
 {
-    public class CameraModel : IDisposable
+    public class CameraModel : Model
     {
         private const string ExposureAutoModeOn = "Continuous";
         private const string ExposureAutoModeOff = "Off";
         private const string GainAutoModeOn = "Continuous";
         private const string GainAutoModeOff = "Off";
         private const string FriendlyNameKey = "FriendlyName";
+        private const int grabResultsCacheCount = 5;
+        private const string WorkingDirectory = "C://CameraBaslerNET";
 
         private ICamera camera;
 
-        public event EventHandler<CameraBitmapEventArgs> ImageGrabbed;
+        private readonly PixelDataConverter converter = new PixelDataConverter();
+        private readonly List<Bitmap> savedImages = new List<Bitmap>();
 
-        public void Dispose()
-        {
-            camera.Close();
-            camera.Dispose();
-            camera = null;
-        }
+        private Bitmap lastImage;
+
+        public event EventHandler<CameraBitmapEventArgs> ImageGrabbed;
 
         #region public properties
 
         public bool IsOpen => camera?.IsOpen ?? false;
 
-        public string Name => camera.CameraInfo[FriendlyNameKey];
+        public string Name => camera?.CameraInfo[FriendlyNameKey] ?? string.Empty;
 
         public double ExposureTimeMin => camera.Parameters[PLCamera.ExposureTime].GetMinimum();
 
@@ -46,6 +50,7 @@ namespace CameraBasler.Model
                 if (value <= ExposureTimeMax && value >= ExposureTimeMin)
                 {
                     camera.Parameters[PLCamera.ExposureTime].SetValue(value);
+                    OnPropertyChanged();
                 }
             }
         }
@@ -67,6 +72,8 @@ namespace CameraBasler.Model
                 {
                     camera.Parameters[PLCamera.ExposureAuto].SetValue(ExposureAutoModeOff);
                 }
+
+                OnPropertyChanged();
             }
         }
 
@@ -82,6 +89,7 @@ namespace CameraBasler.Model
                 if (value >= GainMin && value <= GainMax)
                 {
                     camera.Parameters[PLCamera.Gain].SetValue(value);
+                    OnPropertyChanged();
                 }
             }
         }
@@ -103,6 +111,8 @@ namespace CameraBasler.Model
                 {
                     camera.Parameters[PLCamera.GainAuto].SetValue(GainAutoModeOff);
                 }
+
+                OnPropertyChanged();
             }
         }
 
@@ -119,8 +129,7 @@ namespace CameraBasler.Model
 
             if (!camera.IsOpen)
             {
-                var openedCamera = camera.Open();
-                //camera = openedCamera;
+                camera.Open();
             }
         }
 
@@ -134,6 +143,11 @@ namespace CameraBasler.Model
 
         public void Start()
         {
+            if (camera.StreamGrabber.IsGrabbing)
+            {
+                return;
+            }
+
             camera.StreamGrabber.ImageGrabbed += OnImageRecived;
             camera.StreamGrabber.Start(GrabStrategy.OneByOne, GrabLoop.ProvidedByStreamGrabber);
         }
@@ -144,6 +158,50 @@ namespace CameraBasler.Model
             camera.StreamGrabber.Stop();
         }
 
+        public void Snapshot()
+        {
+            savedImages.Add(lastImage);
+        }
+
+        public void SaveImages()
+        {
+            if (savedImages.Count == 0)
+            {
+                return;
+            }
+
+            if (!Directory.Exists(WorkingDirectory))
+            {
+                Directory.CreateDirectory(WorkingDirectory);
+            }
+
+            var files = Directory.GetFiles(WorkingDirectory).Select(Path.GetFileNameWithoutExtension);
+            var name = "video";
+            var index = 1;
+            foreach (var file in files)
+            {
+                if (files.Any(x => string.Compare(x, $"{name}{index}") == 0))
+                {
+                    index++;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            using (var fileWriter = new VideoFileWriter())
+            {
+                var fileName = Path.Combine(WorkingDirectory, $"{name}{index}.avi");
+                fileWriter.Open(fileName, lastImage.Width, lastImage.Height, 25, VideoCodec.Raw);
+                foreach(var bm in savedImages)
+                {
+                    fileWriter.WriteVideoFrame(bm);
+                }
+
+                fileWriter.Close();
+            }
+        }
         #endregion
 
         #region events handlers
@@ -151,17 +209,19 @@ namespace CameraBasler.Model
         private void OnImageRecived(object sender, ImageGrabbedEventArgs e)
         {
             var bitmap = Convert(e.GrabResult);
+            lastImage = bitmap.Clone() as Bitmap;
             ImageGrabbed?.Invoke(sender, new CameraBitmapEventArgs(bitmap));
         }
+
 
         #endregion
 
         #region helpers
 
-        private static Bitmap Convert(IGrabResult grabResult)
+        private Bitmap Convert(IGrabResult grabResult)
         {
-            var converter = new PixelDataConverter();
             var bitmap = new Bitmap(grabResult.Width, grabResult.Height, PixelFormat.Format32bppRgb);
+
             // Lock the bits of the bitmap.
             var rectangle = new Rectangle(0, 0, bitmap.Width, bitmap.Height);
             var bmpData = bitmap.LockBits(rectangle, ImageLockMode.ReadWrite, bitmap.PixelFormat);

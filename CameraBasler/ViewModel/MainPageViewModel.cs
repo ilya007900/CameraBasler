@@ -8,6 +8,7 @@ namespace CameraBasler.ViewModel
     public class MainPageViewModel : ViewModel
     {
         private BitmapImage image;
+        private CameraViewModel cameraViewModel;
 
         public BitmapImage Image
         {
@@ -21,7 +22,15 @@ namespace CameraBasler.ViewModel
 
         public ArduinoViewModel ArduinoViewModel { get; }
 
-        public CameraViewModel CameraViewModel { get; }
+        public CameraViewModel CameraViewModel
+        {
+            get => cameraViewModel;
+            set
+            {
+                cameraViewModel = value;
+                OnPropertyChanged();
+            }
+        }
 
         public PupilReactionViewModel PupilReactionViewModel { get; }
 
@@ -30,21 +39,10 @@ namespace CameraBasler.ViewModel
         public MainPageViewModel()
         {
             CameraViewModel = new CameraViewModel();
-            ArduinoViewModel = new ArduinoViewModel();
-            PupilReactionViewModel = new PupilReactionViewModel();
-            BrightnessDistributionViewModel = new BrightnessDistributionViewModel();
-        }
-
-        public void StartVideo()
-        {
             CameraViewModel.OnImageRecived += CameraViewModel_OnImageRecived;
-            CameraViewModel.StartGrab();
-        }
-
-        public void StopVideo()
-        {
-            CameraViewModel.OnImageRecived -= CameraViewModel_OnImageRecived;
-            CameraViewModel.StopGrab();
+            ArduinoViewModel = new ArduinoViewModel();
+            PupilReactionViewModel = new PupilReactionViewModel(ArduinoViewModel, CameraViewModel);
+            BrightnessDistributionViewModel = new BrightnessDistributionViewModel();
         }
 
         private void CameraViewModel_OnImageRecived(object sender, CameraBitmapEventArgs e)

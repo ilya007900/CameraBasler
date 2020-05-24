@@ -1,17 +1,38 @@
-﻿using CameraBasler.Model;
+﻿using CameraBasler.Commands;
+using CameraBasler.Model;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO.Ports;
+using System.Windows;
+using System.Windows.Input;
 
 namespace CameraBasler.ViewModel
 {
     public class ArduinoViewModel : ViewModel
     {
         private readonly ArduinoModel model;
+        private ObservableCollection<string> sendedCommands;
 
         private string selectedPort;
         private string command;
         private string recivedData;
         private string errorMessage;
+        private bool isConnected = false;
+
+        private ICommand connectCommand;
+        private ICommand disconnectCommand;
+        private ICommand refreshPortsCommand;
+        private ICommand executeCommand;
+
+        public ObservableCollection<string> SendedCommands
+        {
+            get => sendedCommands;
+            set
+            {
+                sendedCommands = value;
+                OnPropertyChanged();
+            }
+        }
 
         public string SelectedPort
         {
@@ -55,11 +76,33 @@ namespace CameraBasler.ViewModel
 
         public IEnumerable<string> AvailablePorts => model.AvailablePorts;
 
-        public bool IsPortOpen => model.IsOpen;
+        public bool IsConnected
+        {
+            get => isConnected;
+            set
+            {
+                isConnected = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public ICommand ConnectCommand => connectCommand ??
+            (connectCommand = new RelayCommand(obj => Connect()));
+
+        public ICommand DisconnectCommand => disconnectCommand ??
+            (disconnectCommand = new RelayCommand(obj => Disconnect()));
+
+        public ICommand RefreshPortsCommand => refreshPortsCommand ??
+            (refreshPortsCommand = new RelayCommand(obj => RefreshPorts()));
+
+        public ICommand ExecuteCommand => executeCommand ??
+            (executeCommand = new RelayCommand(obj => WriteCommand()));
 
         public ArduinoViewModel()
         {
             model = new ArduinoModel();
+            model.OnCommandSended += Model_OnCommandSended;
+            SendedCommands = new ObservableCollection<string>();
         }
 
         public void RefreshPorts()
@@ -69,7 +112,14 @@ namespace CameraBasler.ViewModel
 
         public void Connect()
         {
+            if (string.IsNullOrEmpty(SelectedPort))
+            {
+                MessageBox.Show("Port not selected");
+                return;
+            }
+
             model.Connect(SelectedPort);
+            IsConnected = model.IsOpen;
             model.OnDataRecived += Model_OnDataRecived;
         }
 
@@ -77,6 +127,7 @@ namespace CameraBasler.ViewModel
         {
             model.OnDataRecived -= Model_OnDataRecived;
             model.Disconnect();
+            IsConnected = model.IsOpen;
         }
 
         public void WriteCommand()
@@ -84,92 +135,14 @@ namespace CameraBasler.ViewModel
             model.WriteCommand(Command);
         }
 
-        public bool SendInitCommand()
+        public void WriteCommand(string command)
         {
-            var result = model.SendInitCommand();
-            if (!result)
-            {
-                ErrorMessage = $"Error in {nameof(model.SendInitCommand)}";
-            }
-
-            return result;
+            model.WriteCommand(command);
         }
 
-        public bool SendIRLEDSwitchCommand(bool flag)
+        private void Model_OnCommandSended(object sender, Events.CommandEventArgs e)
         {
-            var result = model.SendIRLEDSwitchCommand(flag);
-            if (!result)
-            {
-                ErrorMessage = $"Error in {nameof(model.SendIRLEDSwitchCommand)}";
-            }
-
-            return result;
-        }
-
-        public bool SendBlueLedSwitchCommand(bool flag)
-        {
-            var result = model.SendBlueLedSwitchCommand(flag);
-            if (!result)
-            {
-                ErrorMessage = $"Error in {nameof(model.SendBlueLedSwitchCommand)}";
-            }
-
-            return result;
-        }
-
-        public bool SendPWMSetCommand(byte code)
-        {
-            var result = model.SendPWMSetCommand(code);
-            if (!result)
-            {
-                ErrorMessage = $"Error in {nameof(model.SendPWMSetCommand)}";
-            }
-
-            return result;
-        }
-
-        public bool SendLEDNSwitchCommad(byte number, bool flag)
-        {
-            var result = model.SendLEDNSwitchCommad(number, flag);
-            if (!result)
-            {
-                ErrorMessage = $"Error in {nameof(model.SendLEDNSwitchCommad)}";
-            }
-
-            return result;
-        }
-
-        public bool SendEnableCommand(bool flag)
-        {
-            var result = model.SendEnableCommand(flag);
-            if (!result)
-            {
-                ErrorMessage = $"Error in {nameof(model.SendEnableCommand)}";
-            }
-
-            return result;
-        }
-
-        public bool SendEnableCommand(short number)
-        {
-            var result = model.SendEnableCommand(number);
-            if (!result)
-            {
-                ErrorMessage = $"Error in {nameof(model.SendEnableCommand)}";
-            }
-
-            return result;
-        }
-
-        public bool SendStopCommand()
-        {
-            var result = model.SendStopCommand();
-            if (!result)
-            {
-                ErrorMessage = $"Error in {nameof(model.SendStopCommand)}";
-            }
-
-            return result;
+            SendedCommands.Add(e.Command);
         }
 
         private void Model_OnDataRecived(object sender, SerialDataReceivedEventArgs e)

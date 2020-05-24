@@ -1,17 +1,72 @@
 ﻿namespace CameraBasler.Model
 {
-    public class DiodModel
+    public class DiodModel : Model
     {
-        public bool IsUsing { get; set; }
+        private bool isUsing;
+        private int maxEnergy;
+        private double tau;
+        private int km1;
+        private int km2;
+        private int step;
 
-        public int EnergyMax { get; set; }
+        public bool IsUsing
+        {
+            get => isUsing;
+            set
+            {
+                isUsing = value;
+                OnPropertyChanged();
+            }
+        }
 
-        public double Tau { get; set; }
+        public int MaxEnergy
+        {
+            get => maxEnergy;
+            set
+            {
+                maxEnergy = value;
+                OnPropertyChanged();
+            }
+        }
 
-        public int Km1 { get; set; }
+        public double Tau
+        {
+            get => tau;
+            set
+            {
+                tau = value;
+                OnPropertyChanged();
+            }
+        }
 
-        public int Km2 { get; set; }
+        public int Km1
+        {
+            get => km1;
+            set
+            {
+                km1 = value;
+                OnPropertyChanged();
+            }
+        }
 
-        public int Step { get; set; }
+        public int Km2
+        {
+            get => km2;
+            set
+            {
+                km2 = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public int Step
+        {
+            get => step;
+            set
+            {
+                step = value;
+                OnPropertyChanged();
+            }
+        }
     }
 }
