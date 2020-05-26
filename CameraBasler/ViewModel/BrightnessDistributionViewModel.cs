@@ -35,6 +35,8 @@ namespace CameraBasler.ViewModel
                 Id = 7,
             }
         };
+        private readonly ArduinoViewModel arduinoViewModel;
+        private readonly CameraViewModel cameraViewModel;
 
         private bool tauTuning;
         private bool inProgress;
