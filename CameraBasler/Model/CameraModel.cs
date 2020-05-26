@@ -46,7 +46,7 @@ namespace CameraBasler.Model
             }
             set
             {
-                if (value <= ExposureTimeMax && value >= ExposureTimeMin)
+                if (value <= ExposureTimeMax && value >= ExposureTimeMin && !ExposureAuto)
                 {
                     camera.Parameters[PLCamera.ExposureTime].SetValue(value);
                     OnPropertyChanged();
