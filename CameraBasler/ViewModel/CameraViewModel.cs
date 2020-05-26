@@ -2,6 +2,7 @@
 using CameraBasler.Events;
 using CameraBasler.Model;
 using System;
+using System.Threading;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -10,6 +11,8 @@ namespace CameraBasler.ViewModel
 {
     public class CameraViewModel : ViewModel
     {
+        private readonly object lockObj = new object();
+
         private CameraModel model;
         private bool isCameraOpen = false;
         private bool isGrabbing = false;
@@ -21,6 +24,7 @@ namespace CameraBasler.ViewModel
         private ICommand startVideoCommand;
         private ICommand stopVideoCommand;
 
+        private PixelFormatModel pixelFormatModel;
         private ExposureViewModel exposureViewModel;
         private GainViewModel gainViewModel;
 
@@ -30,6 +34,16 @@ namespace CameraBasler.ViewModel
             set
             {
                 model = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public PixelFormatModel PixelFormatModel
+        {
+            get => pixelFormatModel;
+            set
+            {
+                pixelFormatModel = value;
                 OnPropertyChanged();
             }
         }
@@ -52,7 +66,7 @@ namespace CameraBasler.ViewModel
                 gainViewModel = value;
                 OnPropertyChanged();
             }
-        } 
+        }
 
         public bool IsCameraOpen
         {
@@ -74,7 +88,7 @@ namespace CameraBasler.ViewModel
             }
         }
 
-        public string Name 
+        public string Name
         {
             get => name;
             set
@@ -119,6 +133,7 @@ namespace CameraBasler.ViewModel
         {
             Model = new CameraModel();
             Model.Open();
+            PixelFormatModel = new PixelFormatModel(Model);
             ExposureViewModel = new ExposureViewModel(Model);
             GainViewModel = new GainViewModel(Model);
             IsCameraOpen = true;
@@ -127,12 +142,16 @@ namespace CameraBasler.ViewModel
 
         public void CloseCamera()
         {
-            Model.Close();
-            Model = null;
-            ExposureViewModel = null;
-            GainViewModel = null;
-            IsCameraOpen = false;
-            Name = null;
+            lock (lockObj)
+            {
+                Model.Close();
+                Model = null;
+                ExposureViewModel = null;
+                GainViewModel = null;
+                IsCameraOpen = false;
+                Name = null;
+                IsGrabbing = false;
+            }
         }
 
         public void StartGrab()
@@ -140,6 +159,8 @@ namespace CameraBasler.ViewModel
             Model.ImageGrabbed += Model_ImageGrabbed;
             IsGrabbing = true;
             Model.Start();
+            var thread = new Thread(StartExposureWatcher);
+            thread.Start();
         }
 
         public void StopGrab()
@@ -147,6 +168,22 @@ namespace CameraBasler.ViewModel
             Model.ImageGrabbed -= Model_ImageGrabbed;
             IsGrabbing = false;
             Model.Stop();
+        }
+
+        public void StartExposureWatcher()
+        {
+            while (IsGrabbing)
+            {
+                lock (lockObj)
+                {
+                    if (ExposureViewModel != null && ExposureViewModel.IsAutoMode)
+                    {
+                        ExposureViewModel.Exposure = ExposureViewModel.Exposure;
+                    }
+                }
+
+                Thread.Sleep(500);
+            }
         }
 
         private void Model_ImageGrabbed(object sender, CameraBitmapEventArgs e)

@@ -44,9 +44,8 @@
                         Command="{Binding CameraViewModel.ChangeCameraStateCommand}">
                     </Button>
                 </StackPanel>
-                <TabControl Name="CameraControl"
-                            Margin="10" 
-                            IsEnabled="{Binding CameraViewModel.IsCameraOpen}">
+                <TabControl IsEnabled="{Binding CameraViewModel.IsCameraOpen}"
+                            Margin="10">
                     <TabItem Header="Exposure">
                         <StackPanel Background="#FFE5E5E5">
                             <CheckBox IsChecked="{Binding CameraViewModel.ExposureViewModel.IsAutoMode}" 
@@ -79,6 +78,13 @@
                                 Margin="20, 5" />
                         </StackPanel>
                     </TabItem>
+                    <TabItem Header="PixelFormat">
+                        <StackPanel>
+                            <ComboBox ItemsSource="{Binding CameraViewModel.PixelFormatModel.PixelFormats}"
+                                      SelectedItem="{Binding CameraViewModel.PixelFormatModel.PixelFormat}">
+                            </ComboBox>
+                        </StackPanel>
+                    </TabItem>
                 </TabControl>
                 <WrapPanel IsEnabled="{Binding CameraViewModel.IsCameraOpen}" Orientation="Horizontal" Margin="10 0">
                     <Label Content="Video:" Margin="5, 0"></Label>
@@ -104,7 +110,9 @@
                                     <ColumnDefinition Width="7*"></ColumnDefinition>
                                     <ColumnDefinition Width="3*"></ColumnDefinition>
                                 </Grid.ColumnDefinitions>
-                                <ComboBox Grid.Column="0" ItemsSource="{Binding ArduinoViewModel.AvailablePorts}"/>
+                                <ComboBox Grid.Column="0" 
+                                          SelectedItem="{Binding ArduinoViewModel.SelectedPort}" 
+                                          ItemsSource="{Binding ArduinoViewModel.AvailablePorts}"/>
                                 <Button Grid.Column="1"
                                         Name="RefreshPortsButton"
                                         Content="Refresh"
@@ -251,7 +259,7 @@
                             <WrapPanel HorizontalAlignment="Center" Orientation="Horizontal">
                                 <Button IsEnabled="{Binding PupilReactionViewModel.InProgress}"
                                         Margin="5"
-                                        Width="165"
+                                        Width="175"
                                         Command="{Binding PupilReactionViewModel.IncreaseBrightCommand}">
                                     <Button.Content>
                                         <StackPanel Orientation="Horizontal">

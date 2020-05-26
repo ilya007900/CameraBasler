@@ -105,6 +105,7 @@
     <Compile Include="Model\ArduinoModel.cs" />
     <Compile Include="Model\DiodModel.cs" />
     <Compile Include="Model\Model.cs" />
+    <Compile Include="Model\PixelFormatModel.cs" />
     <Compile Include="Model\PupilReactionModel.cs" />
     <Compile Include="ViewModel\ArduinoViewModel.cs" />
     <Compile Include="Model\CameraModel.cs" />

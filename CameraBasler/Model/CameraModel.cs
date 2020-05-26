@@ -17,7 +17,6 @@ namespace CameraBasler.Model
         private const string GainAutoModeOn = "Continuous";
         private const string GainAutoModeOff = "Off";
         private const string FriendlyNameKey = "FriendlyName";
-        private const int grabResultsCacheCount = 5;
         private const string WorkingDirectory = "C://CameraBaslerNET";
 
         private ICamera camera;
@@ -116,6 +115,17 @@ namespace CameraBasler.Model
             }
         }
 
+        public IEnumerable<string> PixelFormats => camera.Parameters[PLCamera.PixelFormat].GetAllValues();
+
+        public string PixelFormat
+        {
+            get => camera.Parameters[PLCamera.PixelFormat].GetValue();
+            set
+            {
+                camera.Parameters[PLCamera.PixelFormat].SetValue(value);
+                OnPropertyChanged();
+            }
+        }
         #endregion
 
         #region public methods
@@ -213,14 +223,13 @@ namespace CameraBasler.Model
             ImageGrabbed?.Invoke(sender, new CameraBitmapEventArgs(bitmap));
         }
 
-
         #endregion
 
         #region helpers
 
         private Bitmap Convert(IGrabResult grabResult)
         {
-            var bitmap = new Bitmap(grabResult.Width, grabResult.Height, PixelFormat.Format32bppRgb);
+            var bitmap = new Bitmap(grabResult.Width, grabResult.Height, System.Drawing.Imaging.PixelFormat.Format32bppRgb);
 
             // Lock the bits of the bitmap.
             var rectangle = new Rectangle(0, 0, bitmap.Width, bitmap.Height);
