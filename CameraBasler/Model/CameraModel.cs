@@ -1,6 +1,8 @@
 ﻿using Accord.Video.FFMPEG;
 using Basler.Pylon;
+using CameraBasler.Entities;
 using CameraBasler.Events;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -22,9 +24,9 @@ namespace CameraBasler.Model
         private ICamera camera;
 
         private readonly PixelDataConverter converter = new PixelDataConverter();
-        private readonly List<Bitmap> savedImages = new List<Bitmap>();
+        private readonly List<SnapshotData> savedSnapshots = new List<SnapshotData>();
 
-        private Bitmap lastImage;
+        private SnapshotData lastSnapshot;
 
         public event EventHandler<CameraBitmapEventArgs> ImageGrabbed;
 
@@ -170,12 +172,12 @@ namespace CameraBasler.Model
 
         public void Snapshot()
         {
-            savedImages.Add(lastImage);
+            savedSnapshots.Add(lastSnapshot);
         }
 
         public void SaveImages()
         {
-            if (savedImages.Count == 0)
+            if (savedSnapshots.Count == 0)
             {
                 return;
             }
@@ -203,14 +205,25 @@ namespace CameraBasler.Model
             using (var fileWriter = new VideoFileWriter())
             {
                 var fileName = Path.Combine(WorkingDirectory, $"{name}{index}.avi");
-                fileWriter.Open(fileName, lastImage.Width, lastImage.Height, 25, VideoCodec.Raw);
-                foreach(var bm in savedImages)
+                fileWriter.Open(fileName, lastSnapshot.Bitmap.Width, lastSnapshot.Bitmap.Height, 25, VideoCodec.Raw);
+                foreach(var snapshot in savedSnapshots)
                 {
-                    fileWriter.WriteVideoFrame(bm);
+                    fileWriter.WriteVideoFrame(snapshot.Bitmap);
                 }
 
                 fileWriter.Close();
             }
+
+            var snapshotsData = savedSnapshots.Select(x => new
+            {
+                x.DateTime,
+                x.ExposureTime,
+                x.Gain,
+                x.PixelFormat
+            }).ToArray();
+
+            var json = JsonConvert.SerializeObject(snapshotsData);
+            File.WriteAllText(Path.Combine(WorkingDirectory, $"{name}{index}.json"), json);
         }
         #endregion
 
@@ -221,7 +234,15 @@ namespace CameraBasler.Model
             var bitmap = Convert(e.GrabResult);
             if (bitmap != null)
             {
-                lastImage = bitmap.Clone() as Bitmap;
+                lastSnapshot = new SnapshotData
+                {
+                    Bitmap = bitmap.Clone() as Bitmap,
+                    DateTime = DateTime.Now,
+                    ExposureTime = ExposureTime,
+                    Gain = Gain,
+                    PixelFormat = PixelFormat
+                };
+
                 ImageGrabbed?.Invoke(sender, new CameraBitmapEventArgs(bitmap));
             }
         }
