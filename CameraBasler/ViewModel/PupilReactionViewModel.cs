@@ -120,6 +120,7 @@ namespace CameraBasler.ViewModel
             if (pwm >= 0 && pwm <= 255) {
                 var asByte = (byte)pwm;
                 CurrentBright = asByte;
+                Snapshot();
                 arduinoViewModel.WriteCommand("#PWMB" + asByte.ToString());
             }
         }

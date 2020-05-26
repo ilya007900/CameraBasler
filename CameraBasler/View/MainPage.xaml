@@ -78,10 +78,12 @@
                                 Margin="20, 5" />
                         </StackPanel>
                     </TabItem>
-                    <TabItem Header="PixelFormat">
+                    <TabItem Header="PixelFormat"
+                             IsEnabled="{Binding CameraViewModel.IsGrabbing, Converter={StaticResource InverseBooleanConverter}}">
                         <StackPanel>
                             <ComboBox ItemsSource="{Binding CameraViewModel.PixelFormatModel.PixelFormats}"
-                                      SelectedItem="{Binding CameraViewModel.PixelFormatModel.PixelFormat}">
+                                      SelectedItem="{Binding CameraViewModel.PixelFormatModel.PixelFormat}"
+                                      IsEnabled="{Binding CameraViewModel.IsGrabbing, Converter={StaticResource InverseBooleanConverter}}">
                             </ComboBox>
                         </StackPanel>
                     </TabItem>

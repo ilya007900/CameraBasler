@@ -85,7 +85,7 @@ namespace CameraBasler.Model
             get => camera.Parameters[PLCamera.Gain].GetValue();
             set
             {
-                if (value >= GainMin && value <= GainMax)
+                if (value >= GainMin && value <= GainMax && !GainAuto)
                 {
                     camera.Parameters[PLCamera.Gain].SetValue(value);
                     OnPropertyChanged();
@@ -219,8 +219,11 @@ namespace CameraBasler.Model
         private void OnImageRecived(object sender, ImageGrabbedEventArgs e)
         {
             var bitmap = Convert(e.GrabResult);
-            lastImage = bitmap.Clone() as Bitmap;
-            ImageGrabbed?.Invoke(sender, new CameraBitmapEventArgs(bitmap));
+            if (bitmap != null)
+            {
+                lastImage = bitmap.Clone() as Bitmap;
+                ImageGrabbed?.Invoke(sender, new CameraBitmapEventArgs(bitmap));
+            }
         }
 
         #endregion
@@ -229,6 +232,11 @@ namespace CameraBasler.Model
 
         private Bitmap Convert(IGrabResult grabResult)
         {
+            if (grabResult.Width == 0 || grabResult.Height == 0)
+            {
+                return null;
+            }
+
             var bitmap = new Bitmap(grabResult.Width, grabResult.Height, System.Drawing.Imaging.PixelFormat.Format32bppRgb);
 
             // Lock the bits of the bitmap.

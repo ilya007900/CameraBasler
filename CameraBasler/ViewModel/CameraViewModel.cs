@@ -159,8 +159,8 @@ namespace CameraBasler.ViewModel
             Model.ImageGrabbed += Model_ImageGrabbed;
             IsGrabbing = true;
             Model.Start();
-            var thread = new Thread(StartExposureWatcher);
-            thread.Start();
+            var watcherThread = new Thread(StartWatcher);
+            watcherThread.Start();
         }
 
         public void StopGrab()
@@ -170,7 +170,7 @@ namespace CameraBasler.ViewModel
             Model.Stop();
         }
 
-        public void StartExposureWatcher()
+        public void StartWatcher()
         {
             while (IsGrabbing)
             {
@@ -179,6 +179,11 @@ namespace CameraBasler.ViewModel
                     if (ExposureViewModel != null && ExposureViewModel.IsAutoMode)
                     {
                         ExposureViewModel.Exposure = ExposureViewModel.Exposure;
+                    }
+
+                    if (GainViewModel != null && GainViewModel.IsAutoMode)
+                    {
+                        GainViewModel.Gain = GainViewModel.Gain;
                     }
                 }
 
