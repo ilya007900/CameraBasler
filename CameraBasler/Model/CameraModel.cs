@@ -1,5 +1,6 @@
 ﻿using Basler.Pylon;
 using CameraBasler.Events;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -225,7 +226,7 @@ namespace CameraBasler.Model
                 ImageGrabbed?.Invoke(sender, new CameraBitmapEventArgs(bitmap));
             }
         }
-
+        
         #endregion
 
         #region helpers
