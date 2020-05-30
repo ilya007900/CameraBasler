@@ -57,7 +57,8 @@ namespace CameraBasler.Model
                 return;
             }
 
-            SendedCommands.Add(command);
+            System.Windows.Application.Current.Dispatcher.Invoke(() => SendedCommands.Add(command));
+            
             port.WriteLine(command);
         }
 

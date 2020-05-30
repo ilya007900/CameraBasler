@@ -202,8 +202,6 @@
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="*"></RowDefinition>
                                     <RowDefinition Height="*"></RowDefinition>
-                                    <!--<RowDefinition Height="*"></RowDefinition>-->
-                                    <!--<RowDefinition Height="*"></RowDefinition>-->
                                 </Grid.RowDefinitions>
                                 <TextBlock Grid.Row="0" 
                                        Grid.Column="0" 
@@ -218,40 +216,21 @@
                                 <TextBlock Grid.Row="1"
                                        Grid.Column="0"
                                        Style="{StaticResource TableProperty}"
-                                       Text="Коэффициент роста яркости (k): ">
+                                       Text="Значение приращения яркости: ">
                                 </TextBlock>
                                 <TextBox Grid.Row="1"
                                      Grid.Column="1"
                                      Text="{Binding PupilReactionViewModel.Model.BrightIncreaseCoefficient}"
                                      VerticalAlignment="Center">
                                 </TextBox>
-                                <!--<TextBlock Grid.Row="2" 
-                                       Grid.Column="0"
-                                       Style="{StaticResource TableProperty}"
-                                       Text="Пороговая яркость для длинных импульсов: ">
-                                </TextBlock>-->
-                                <!--<TextBox Grid.Row="2"
-                                     Grid.Column="1"
-                                     Text="{Binding PupilReactionViewModel.ThresholdBrightnessForLongPulses}"
-                                     VerticalAlignment="Center">
-                                </TextBox>
-                                <TextBlock Grid.Row="3"
-                                       Grid.Column="0"
-                                       Style="{StaticResource TableProperty}"
-                                       Text="Среднее время реакции зрачка, мс: ">
-                                </TextBlock>-->
-                                <!--<TextBlock Grid.Row="3" 
-                                       Grid.Column="1" 
-                                       Text="{Binding PupilReactionViewModel.AveragePupilReactionTime}" 
-                                       VerticalAlignment="Center">
-                                </TextBlock>-->
                             </Grid>
                             <Separator/>
-                            <!--<CheckBox Margin="0, 5"
-                                  IsChecked="{Binding PupilReactionViewModel.ShowGraphics}"
+                            <CheckBox Margin="0, 5"
+                                      IsEnabled="{Binding PupilReactionViewModel.InProgress, Converter={StaticResource InverseBooleanConverter}}"
+                                  IsChecked="{Binding PupilReactionViewModel.IsAutoMode}"
                                   HorizontalAlignment="Center"
-                                  Content="Показать графики">
-                            </CheckBox>-->
+                                  Content="Авто режим">
+                            </CheckBox>
                             <Label HorizontalAlignment="Center" 
                                    Content="{Binding PupilReactionViewModel.State}">
                             </Label>
@@ -268,22 +247,25 @@
                                         Command="{Binding PupilReactionViewModel.StopCommand}"
                                         Content="Stop">
                                 </Button>
-                                <Button IsEnabled="{Binding PupilReactionViewModel.InProgress}"
-                                        Margin="5"
-                                        Width="90"
-                                        Command="{Binding PupilReactionViewModel.SnapshotCommand}"
-                                        Content="Snapshot">
-                                </Button>
                             </WrapPanel>
                             <WrapPanel HorizontalAlignment="Center" Orientation="Horizontal">
-                                <Button IsEnabled="{Binding PupilReactionViewModel.InProgress}"
-                                        Margin="5"
+                                <Button Margin="5"
                                         Width="175"
                                         Command="{Binding PupilReactionViewModel.IncreaseBrightCommand}">
+                                    <Button.IsEnabled>
+                                        <MultiBinding Converter="{StaticResource BooleanAndConverter}">
+                                            <Binding Path="PupilReactionViewModel.InProgress" 
+                                                     FallbackValue="false">
+                                            </Binding>
+                                            <Binding Path="PupilReactionViewModel.IsAutoMode" 
+                                                     Converter="{StaticResource InverseBooleanConverter}">
+                                            </Binding>
+                                        </MultiBinding>
+                                    </Button.IsEnabled>
                                     <Button.Content>
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="{Binding PupilReactionViewModel.CurrentBright, StringFormat='Увеличить яркость {0} в'}"></TextBlock>
-                                            <TextBlock Text="{Binding PupilReactionViewModel.Model.BrightIncreaseCoefficient, StringFormat=' {0} раз'}"></TextBlock>
+                                            <TextBlock Text="{Binding PupilReactionViewModel.Model.CurrentBright, StringFormat='Увеличить яркость {0} на'}"></TextBlock>
+                                            <TextBlock Text="{Binding PupilReactionViewModel.Model.BrightIncreaseCoefficient, StringFormat=' {0}'}"></TextBlock>
                                         </StackPanel>
                                     </Button.Content>
                                 </Button>

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Windows.Input;
 
 namespace CameraBasler.ViewModel
@@ -17,16 +18,14 @@ namespace CameraBasler.ViewModel
         private PupilReactionModel model;
         private readonly ArduinoViewModel arduinoViewModel;
         private readonly CameraViewModel cameraViewModel;
-        private readonly List<SnapshotData> savedImages = new List<SnapshotData>();
+        private readonly List<PupilReactionSnapshotData> savedImages = new List<PupilReactionSnapshotData>();
 
         private bool inProgress;
-        private bool showGraphics;
+        private bool isAutoMode;
         private string state;
-        private byte currentBright;
 
         private ICommand startCommand;
         private ICommand stopCommand;
-        private ICommand snapshotCommand;
         private ICommand increaseBrightCommand;
 
         public PupilReactionModel Model
@@ -39,12 +38,12 @@ namespace CameraBasler.ViewModel
             }
         }
 
-        public bool ShowGraphics
+        public bool IsAutoMode
         {
-            get => showGraphics;
+            get => isAutoMode;
             set
             {
-                showGraphics = value;
+                isAutoMode = value;
                 OnPropertyChanged();
             }
         }
@@ -69,24 +68,11 @@ namespace CameraBasler.ViewModel
             }
         }
 
-        public byte CurrentBright
-        {
-            get => currentBright;
-            set
-            {
-                currentBright = value;
-                OnPropertyChanged();
-            }
-        }
-
         public ICommand StartCommand => startCommand ?? 
             (startCommand = new RelayCommand(obj => Start()));
 
         public ICommand StopCommand => stopCommand ?? 
             (stopCommand = new RelayCommand(obj => Stop()));
-
-        public ICommand SnapshotCommand => snapshotCommand ?? 
-            (snapshotCommand = new RelayCommand(obj => Snapshot()));
 
         public ICommand IncreaseBrightCommand => increaseBrightCommand ??
             (increaseBrightCommand = new RelayCommand(obj => IncreaseBright()));
@@ -103,17 +89,41 @@ namespace CameraBasler.ViewModel
             InProgress = true;
             State = "InProgress";
             cameraViewModel.StartGrab();
-            CurrentBright = model.StartingBrightLevel;
-            arduinoViewModel.Model.WriteCommand("#LEDAON");
-            arduinoViewModel.Model.WriteCommand("#LEDBON");
+            model.CurrentBright = model.StartingBrightLevel;
+            if (IsAutoMode)
+            {
+                var thread = new Thread(() =>
+                {
+                    while (InProgress)
+                    {
+                        Thread.Sleep(2000);
+                        if (InProgress)
+                        {
+                            IncreaseBright();
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                });
+                thread.Start();
+            }
+            else
+            {
+                arduinoViewModel.Model.WriteCommand("#LEDAON");
+
+                var brightCommand = $"#PWMB{model.StartingBrightLevel}";
+                arduinoViewModel.Model.WriteCommand(brightCommand);
+            }
         }
 
         public void Stop()
         {
             arduinoViewModel.Model.WriteCommand("#LEDAOFF");
             arduinoViewModel.Model.WriteCommand("#LEDBOFF");
-            cameraViewModel.StopGrab();
             InProgress = false;
+            cameraViewModel.StopGrab();
             State = "Finished";
             SaveImages();
         }
@@ -121,13 +131,14 @@ namespace CameraBasler.ViewModel
         public void Snapshot()
         {
             var bytes = cameraViewModel.Model.Snapshot();
-            var snapshotData = new SnapshotData
+            var snapshotData = new PupilReactionSnapshotData
             {
                 Bytes = bytes,
                 DateTime = DateTime.Now,
                 ExposureTime = cameraViewModel.Model.ExposureTime,
                 Gain = cameraViewModel.Model.Gain,
-                PixelFormat = cameraViewModel.Model.PixelFormat
+                PixelFormat = cameraViewModel.Model.PixelFormat,
+                PWM = model.CurrentBright
             };
 
             savedImages.Add(snapshotData);
@@ -135,12 +146,12 @@ namespace CameraBasler.ViewModel
 
         public void IncreaseBright()
         {
-            var pwm = CurrentBright * model.BrightIncreaseCoefficient;
-            if (pwm >= 0 && pwm <= 255) {
-                var asByte = (byte)pwm;
-                CurrentBright = asByte;
+            var pwm = model.CurrentBright + model.BrightIncreaseCoefficient;
+            if (pwm >= byte.MinValue && pwm <= byte.MaxValue) {
+                var asUshort = (ushort)pwm;
+                model.CurrentBright = asUshort;
                 Snapshot();
-                arduinoViewModel.Model.WriteCommand("#PWMB" + asByte.ToString());
+                arduinoViewModel.Model.WriteCommand("#PWMB" + asUshort.ToString());
             }
         }
 
@@ -185,7 +196,8 @@ namespace CameraBasler.ViewModel
                 x.DateTime,
                 x.ExposureTime,
                 x.Gain,
-                x.PixelFormat
+                x.PixelFormat,
+                x.PWM
             }).ToArray();
 
             var json = JsonConvert.SerializeObject(snapshotsData);

@@ -1,13 +1,9 @@
 ﻿using Basler.Pylon;
-using CameraBasler.Entities;
 using CameraBasler.Events;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.IO;
-using System.Linq;
 
 namespace CameraBasler.Model
 {

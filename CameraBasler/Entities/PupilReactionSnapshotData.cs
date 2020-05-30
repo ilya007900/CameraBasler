@@ -2,7 +2,7 @@
 
 namespace CameraBasler.Entities
 {
-    public class SnapshotData
+    public class PupilReactionSnapshotData
     {
         public byte[] Bytes { get; set; }
 
@@ -11,6 +11,8 @@ namespace CameraBasler.Entities
         public double Gain { get; set; }
 
         public string PixelFormat { get; set; }
+
+        public ushort PWM { get; set; }
 
         public DateTime DateTime { get; set; }
     }

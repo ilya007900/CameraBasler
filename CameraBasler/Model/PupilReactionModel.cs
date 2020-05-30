@@ -3,9 +3,10 @@
     public class PupilReactionModel : Model
     {
         private byte startingBrightLevel;
-        private double brightIncreaseCoefficient;
+        private byte brightIncreaseCoefficient;
         private int thresholdBrightnessForLongPulses;
         private int averagePupilReactionTime;
+        private ushort currentBright;
 
         public byte StartingBrightLevel
         {
@@ -17,7 +18,7 @@
             }
         }
 
-        public double BrightIncreaseCoefficient
+        public byte BrightIncreaseCoefficient
         {
             get => brightIncreaseCoefficient;
             set
@@ -43,6 +44,16 @@
             set
             {
                 averagePupilReactionTime = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public ushort CurrentBright
+        {
+            get => currentBright;
+            set
+            {
+                currentBright = value;
                 OnPropertyChanged();
             }
         }
