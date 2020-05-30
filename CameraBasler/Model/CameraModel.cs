@@ -1,14 +1,10 @@
-﻿using Accord.Video.FFMPEG;
-using Basler.Pylon;
-using CameraBasler.Entities;
+﻿using Basler.Pylon;
 using CameraBasler.Events;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.IO;
-using System.Linq;
 
 namespace CameraBasler.Model
 {
@@ -18,23 +14,20 @@ namespace CameraBasler.Model
         private const string ExposureAutoModeOff = "Off";
         private const string GainAutoModeOn = "Continuous";
         private const string GainAutoModeOff = "Off";
-        private const string FriendlyNameKey = "FriendlyName";
-        private const string WorkingDirectory = "C://CameraBaslerNET";
 
-        private ICamera camera;
+        private readonly ICamera camera;
 
         private readonly PixelDataConverter converter = new PixelDataConverter();
-        private readonly List<SnapshotData> savedSnapshots = new List<SnapshotData>();
 
-        private SnapshotData lastSnapshot;
+        private byte[] lastImage;
 
         public event EventHandler<CameraBitmapEventArgs> ImageGrabbed;
 
         #region public properties
 
-        public bool IsOpen => camera?.IsOpen ?? false;
+        public bool IsOpen => camera.IsOpen;
 
-        public string Name => camera?.CameraInfo[FriendlyNameKey] ?? string.Empty;
+        public string Name => camera.CameraInfo["FriendlyName"];
 
         public double ExposureTimeMin => camera.Parameters[PLCamera.ExposureTime].GetMinimum();
 
@@ -128,17 +121,37 @@ namespace CameraBasler.Model
                 OnPropertyChanged();
             }
         }
+
+        public double FrameRate
+        {
+            get => camera.Parameters[PLCamera.ResultingFrameRate].GetValue();
+        }
+
+        public bool IsGrabbing
+        {
+            get => camera.StreamGrabber.IsGrabbing;
+        }
+
+        #endregion
+
+        #region life cycle
+
+        public CameraModel()
+        {
+            camera = new Camera();
+        }
+
+        public CameraModel(ICamera camera)
+        {
+            this.camera = camera;
+        }
+
         #endregion
 
         #region public methods
 
         public void Open()
         {
-            if (camera == null)
-            {
-                camera = new Camera();
-            }
-
             if (!camera.IsOpen)
             {
                 camera.Open();
@@ -155,98 +168,65 @@ namespace CameraBasler.Model
 
         public void Start()
         {
-            if (camera.StreamGrabber.IsGrabbing)
+            if (IsGrabbing)
             {
                 return;
             }
 
             camera.StreamGrabber.ImageGrabbed += OnImageRecived;
             camera.StreamGrabber.Start(GrabStrategy.OneByOne, GrabLoop.ProvidedByStreamGrabber);
+            OnPropertyChanged(nameof(IsGrabbing));
         }
 
         public void Stop()
         {
-            camera.StreamGrabber.ImageGrabbed -= OnImageRecived;
-            camera.StreamGrabber.Stop();
-        }
-
-        public void Snapshot()
-        {
-            savedSnapshots.Add(lastSnapshot);
-        }
-
-        public void SaveImages()
-        {
-            if (savedSnapshots.Count == 0)
+            if (!IsGrabbing)
             {
                 return;
             }
 
-            if (!Directory.Exists(WorkingDirectory))
-            {
-                Directory.CreateDirectory(WorkingDirectory);
-            }
-
-            var files = Directory.GetFiles(WorkingDirectory).Select(Path.GetFileNameWithoutExtension);
-            var name = "video";
-            var index = 1;
-            foreach (var file in files)
-            {
-                if (files.Any(x => string.Compare(x, $"{name}{index}") == 0))
-                {
-                    index++;
-                }
-                else
-                {
-                    break;
-                }
-            }
-
-            using (var fileWriter = new VideoFileWriter())
-            {
-                var fileName = Path.Combine(WorkingDirectory, $"{name}{index}.avi");
-                fileWriter.Open(fileName, lastSnapshot.Bitmap.Width, lastSnapshot.Bitmap.Height, 25, VideoCodec.Raw);
-                foreach(var snapshot in savedSnapshots)
-                {
-                    fileWriter.WriteVideoFrame(snapshot.Bitmap);
-                }
-
-                fileWriter.Close();
-            }
-
-            var snapshotsData = savedSnapshots.Select(x => new
-            {
-                x.DateTime,
-                x.ExposureTime,
-                x.Gain,
-                x.PixelFormat
-            }).ToArray();
-
-            var json = JsonConvert.SerializeObject(snapshotsData);
-            File.WriteAllText(Path.Combine(WorkingDirectory, $"{name}{index}.json"), json);
+            camera.StreamGrabber.ImageGrabbed -= OnImageRecived;
+            camera.StreamGrabber.Stop();
+            OnPropertyChanged(nameof(IsGrabbing));
         }
+
+        public byte[] Snapshot()
+        {
+            return lastImage.Clone() as byte[];
+        }
+
         #endregion
 
         #region events handlers
 
         private void OnImageRecived(object sender, ImageGrabbedEventArgs e)
         {
+            OnPropertyChanged(nameof(FrameRate));
+            if (ExposureAuto)
+            {
+                OnPropertyChanged(nameof(ExposureTime));
+            }
+
+            if (GainAuto)
+            {
+                OnPropertyChanged(nameof(Gain));
+            }
+
             var bitmap = Convert(e.GrabResult);
             if (bitmap != null)
             {
-                lastSnapshot = new SnapshotData
+                var bytes = e.GrabResult.PixelData as byte[];
+                if (lastImage == null || lastImage.Length != bytes.Length)
                 {
-                    Bitmap = bitmap.Clone() as Bitmap,
-                    DateTime = DateTime.Now,
-                    ExposureTime = ExposureTime,
-                    Gain = Gain,
-                    PixelFormat = PixelFormat
-                };
+                    lastImage = new byte[bytes.Length];
+                }
+
+                bytes.CopyTo(lastImage, 0);
 
                 ImageGrabbed?.Invoke(sender, new CameraBitmapEventArgs(bitmap));
             }
         }
-
+        
         #endregion
 
         #region helpers
@@ -258,18 +238,15 @@ namespace CameraBasler.Model
                 return null;
             }
 
-            var bitmap = new Bitmap(grabResult.Width, grabResult.Height, System.Drawing.Imaging.PixelFormat.Format32bppRgb);
-
-            // Lock the bits of the bitmap.
+            var pixelFormat = System.Drawing.Imaging.PixelFormat.Format32bppRgb;
+            var bitmap = new Bitmap(grabResult.Width, grabResult.Height, pixelFormat);
             var rectangle = new Rectangle(0, 0, bitmap.Width, bitmap.Height);
             var bmpData = bitmap.LockBits(rectangle, ImageLockMode.ReadWrite, bitmap.PixelFormat);
-
-            // Place the pointer to the buffer of the bitmap.
             converter.OutputPixelFormat = PixelType.BGRA8packed;
+
             var ptrBmp = bmpData.Scan0;
             converter.Convert(ptrBmp, bmpData.Stride * bitmap.Height, grabResult);
             bitmap.UnlockBits(bmpData);
-
             return bitmap;
         }
 

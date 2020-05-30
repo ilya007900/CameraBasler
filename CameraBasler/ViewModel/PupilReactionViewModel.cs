@@ -1,23 +1,31 @@
 ﻿using CameraBasler.Commands;
+using CameraBasler.Entities;
 using CameraBasler.Model;
+using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading;
 using System.Windows.Input;
 
 namespace CameraBasler.ViewModel
 {
     public class PupilReactionViewModel : ViewModel
     {
+        private const string WorkingDirectory = "C://CameraBaslerNET";
+
         private PupilReactionModel model;
         private readonly ArduinoViewModel arduinoViewModel;
         private readonly CameraViewModel cameraViewModel;
+        private readonly List<PupilReactionSnapshotData> savedImages = new List<PupilReactionSnapshotData>();
 
         private bool inProgress;
-        private bool showGraphics;
+        private bool isAutoMode;
         private string state;
-        private byte currentBright;
 
         private ICommand startCommand;
         private ICommand stopCommand;
-        private ICommand snapshotCommand;
         private ICommand increaseBrightCommand;
 
         public PupilReactionModel Model
@@ -30,12 +38,12 @@ namespace CameraBasler.ViewModel
             }
         }
 
-        public bool ShowGraphics
+        public bool IsAutoMode
         {
-            get => showGraphics;
+            get => isAutoMode;
             set
             {
-                showGraphics = value;
+                isAutoMode = value;
                 OnPropertyChanged();
             }
         }
@@ -60,24 +68,11 @@ namespace CameraBasler.ViewModel
             }
         }
 
-        public byte CurrentBright
-        {
-            get => currentBright;
-            set
-            {
-                currentBright = value;
-                OnPropertyChanged();
-            }
-        }
-
         public ICommand StartCommand => startCommand ?? 
             (startCommand = new RelayCommand(obj => Start()));
 
         public ICommand StopCommand => stopCommand ?? 
             (stopCommand = new RelayCommand(obj => Stop()));
-
-        public ICommand SnapshotCommand => snapshotCommand ?? 
-            (snapshotCommand = new RelayCommand(obj => Snapshot()));
 
         public ICommand IncreaseBrightCommand => increaseBrightCommand ??
             (increaseBrightCommand = new RelayCommand(obj => IncreaseBright()));
@@ -94,35 +89,120 @@ namespace CameraBasler.ViewModel
             InProgress = true;
             State = "InProgress";
             cameraViewModel.StartGrab();
-            CurrentBright = model.StartingBrightLevel;
-            arduinoViewModel.WriteCommand("#LEDAON");
-            arduinoViewModel.WriteCommand("#LEDBON");
+            model.CurrentBright = model.StartingBrightLevel;
+            if (IsAutoMode)
+            {
+                var thread = new Thread(() =>
+                {
+                    while (InProgress)
+                    {
+                        Thread.Sleep(2000);
+                        if (InProgress)
+                        {
+                            IncreaseBright();
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                });
+                thread.Start();
+            }
+            else
+            {
+                arduinoViewModel.Model.WriteCommand("#LEDAON");
+
+                var brightCommand = $"#PWMB{model.StartingBrightLevel}";
+                arduinoViewModel.Model.WriteCommand(brightCommand);
+            }
         }
 
         public void Stop()
         {
-            arduinoViewModel.WriteCommand("#LEDAOFF");
-            arduinoViewModel.WriteCommand("#LEDBOFF");
-            cameraViewModel.StopGrab();
+            arduinoViewModel.Model.WriteCommand("#LEDAOFF");
+            arduinoViewModel.Model.WriteCommand("#LEDBOFF");
             InProgress = false;
+            cameraViewModel.StopGrab();
             State = "Finished";
-            cameraViewModel.Model.SaveImages();
+            SaveImages();
         }
 
         public void Snapshot()
         {
-            cameraViewModel.Model.Snapshot();
+            var bytes = cameraViewModel.Model.Snapshot();
+            var snapshotData = new PupilReactionSnapshotData
+            {
+                Bytes = bytes,
+                DateTime = DateTime.Now,
+                ExposureTime = cameraViewModel.Model.ExposureTime,
+                Gain = cameraViewModel.Model.Gain,
+                PixelFormat = cameraViewModel.Model.PixelFormat,
+                PWM = model.CurrentBright
+            };
+
+            savedImages.Add(snapshotData);
         }
 
         public void IncreaseBright()
         {
-            var pwm = CurrentBright * model.BrightIncreaseCoefficient;
-            if (pwm >= 0 && pwm <= 255) {
-                var asByte = (byte)pwm;
-                CurrentBright = asByte;
+            var pwm = model.CurrentBright + model.BrightIncreaseCoefficient;
+            if (pwm >= byte.MinValue && pwm <= byte.MaxValue) {
+                var asUshort = (ushort)pwm;
+                model.CurrentBright = asUshort;
                 Snapshot();
-                arduinoViewModel.WriteCommand("#PWMB" + asByte.ToString());
+                arduinoViewModel.Model.WriteCommand("#PWMB" + asUshort.ToString());
             }
+        }
+
+        public void SaveImages()
+        {
+            if (savedImages.Count == 0)
+            {
+                return;
+            }
+
+            if (!Directory.Exists(WorkingDirectory))
+            {
+                Directory.CreateDirectory(WorkingDirectory);
+            }
+
+            var files = Directory.GetFiles(WorkingDirectory).Select(Path.GetFileNameWithoutExtension).ToArray();
+            var name = "data";
+            var index = 1;
+            foreach (var file in files)
+            {
+                if (files.Any(x => string.Compare(x, $"{name}{index}") == 0))
+                {
+                    index++;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            var imgFileName = Path.Combine(WorkingDirectory, $"{name}{index}.bin");
+            using (var stream = File.OpenWrite(imgFileName))
+            {
+                foreach (var savedImage in savedImages)
+                {
+                    stream.Write(savedImage.Bytes, 0, savedImage.Bytes.Length);
+                }
+            }
+
+            var snapshotsData = savedImages.Select(x => new
+            {
+                x.DateTime,
+                x.ExposureTime,
+                x.Gain,
+                x.PixelFormat,
+                x.PWM
+            }).ToArray();
+
+            var json = JsonConvert.SerializeObject(snapshotsData);
+            var jsonFileName = Path.Combine(WorkingDirectory, $"{name}{index}.json");
+            File.WriteAllText(jsonFileName, json);
         }
     }
 }

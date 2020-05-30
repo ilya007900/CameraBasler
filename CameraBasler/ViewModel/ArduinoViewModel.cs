@@ -1,8 +1,6 @@
 ﻿using CameraBasler.Commands;
 using CameraBasler.Model;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.IO.Ports;
 using System.Windows;
 using System.Windows.Input;
 
@@ -10,26 +8,22 @@ namespace CameraBasler.ViewModel
 {
     public class ArduinoViewModel : ViewModel
     {
-        private readonly ArduinoModel model;
-        private ObservableCollection<string> sendedCommands;
+        private ArduinoModel model;
 
         private string selectedPort;
-        private string command;
-        private string recivedData;
-        private string errorMessage;
-        private bool isConnected = false;
+        private string commandText;
 
         private ICommand connectCommand;
         private ICommand disconnectCommand;
         private ICommand refreshPortsCommand;
         private ICommand executeCommand;
 
-        public ObservableCollection<string> SendedCommands
+        public ArduinoModel Model
         {
-            get => sendedCommands;
+            get => model;
             set
             {
-                sendedCommands = value;
+                model = value;
                 OnPropertyChanged();
             }
         }
@@ -44,47 +38,17 @@ namespace CameraBasler.ViewModel
             }
         }
 
-        public string Command
+        public string CommandText
         {
-            get => command;
+            get => commandText;
             set
             {
-                command = value;
+                commandText = value;
                 OnPropertyChanged();
             }
         }
 
-        public string RecivedData
-        {
-            get => recivedData;
-            set
-            {
-                recivedData = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public string ErrorMessage
-        {
-            get => errorMessage;
-            set
-            {
-                errorMessage = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public IEnumerable<string> AvailablePorts => model.AvailablePorts;
-
-        public bool IsConnected
-        {
-            get => isConnected;
-            set
-            {
-                isConnected = value;
-                OnPropertyChanged();
-            }
-        }
+        public IEnumerable<string> AvailablePorts => ArduinoModel.AvailablePorts;
 
         public ICommand ConnectCommand => connectCommand ??
             (connectCommand = new RelayCommand(obj => Connect()));
@@ -96,14 +60,7 @@ namespace CameraBasler.ViewModel
             (refreshPortsCommand = new RelayCommand(obj => RefreshPorts()));
 
         public ICommand ExecuteCommand => executeCommand ??
-            (executeCommand = new RelayCommand(obj => WriteCommand()));
-
-        public ArduinoViewModel()
-        {
-            model = new ArduinoModel();
-            model.OnCommandSended += Model_OnCommandSended;
-            SendedCommands = new ObservableCollection<string>();
-        }
+            (executeCommand = new RelayCommand(obj => model.WriteCommand(CommandText)));
 
         public void RefreshPorts()
         {
@@ -118,36 +75,12 @@ namespace CameraBasler.ViewModel
                 return;
             }
 
-            model.Connect(SelectedPort);
-            IsConnected = model.IsOpen;
-            model.OnDataRecived += Model_OnDataRecived;
+            Model = new ArduinoModel(SelectedPort);
         }
 
         public void Disconnect()
         {
-            model.OnDataRecived -= Model_OnDataRecived;
-            model.Disconnect();
-            IsConnected = model.IsOpen;
-        }
-
-        public void WriteCommand()
-        {
-            model.WriteCommand(Command);
-        }
-
-        public void WriteCommand(string command)
-        {
-            model.WriteCommand(command);
-        }
-
-        private void Model_OnCommandSended(object sender, Events.CommandEventArgs e)
-        {
-            SendedCommands.Add(e.Command);
-        }
-
-        private void Model_OnDataRecived(object sender, SerialDataReceivedEventArgs e)
-        {
-            RecivedData = model.ReadPortData();
+            Model.Disconnect();
         }
     }
 }

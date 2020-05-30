@@ -1,35 +1,40 @@
-﻿using CameraBasler.Events;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO.Ports;
 
 namespace CameraBasler.Model
 {
-    public class ArduinoModel
+    public class ArduinoModel : Model
     {
         private SerialPort port;
 
-        public bool IsOpen => port == null ? false : port.IsOpen;
+        public static IEnumerable<string> AvailablePorts => SerialPort.GetPortNames();
 
-        public IEnumerable<string> AvailablePorts => SerialPort.GetPortNames();
+        public ObservableCollection<string> SendedCommands { get; } = new ObservableCollection<string>();
 
-        public event EventHandler<SerialDataReceivedEventArgs> OnDataRecived;
-        public event EventHandler<CommandEventArgs> OnCommandSended;
+        public ObservableCollection<string> RecivedData { get; } = new ObservableCollection<string>();
 
-        public bool Connect(string portName)
+        public bool IsPortOpen => port.IsOpen;
+
+        public ArduinoModel(string portName)
         {
-            if (string.IsNullOrEmpty(portName))
+            Connect(portName);
+        }
+
+        public void Connect(string portName)
+        {
+            if (port != null)
             {
-                return false;
+                Disconnect();
             }
 
             port = new SerialPort(portName, 9600, Parity.None, 8, StopBits.One);
             port.DataReceived += Port_DataReceived;
             port.Open();
+            OnPropertyChanged(nameof(IsPortOpen));
             WriteCommand("#STAR");
             port.DtrEnable = true;
-            return true;
-        }  
+        }
 
         public void Disconnect()
         {
@@ -38,37 +43,29 @@ namespace CameraBasler.Model
                 return;
             }
 
-            port.Write("#STOP");
+            WriteCommand("#STOP");
             port.DataReceived -= Port_DataReceived;
             port.Close();
+            OnPropertyChanged(nameof(IsPortOpen));
             port = null;
         }
 
         public void WriteCommand(string command)
         {
-            if (port == null || !port.IsOpen)
+            if (port == null || !IsPortOpen)
             {
                 return;
             }
 
-            ArduinoModel_OnCommandSended(this, new CommandEventArgs(command));
-
+            System.Windows.Application.Current.Dispatcher.Invoke(() => SendedCommands.Add(command));
+            
             port.WriteLine(command);
-        }
-
-        public string ReadPortData()
-        {
-            return port.ReadLine();
-        }
-
-        private void ArduinoModel_OnCommandSended(object sender, CommandEventArgs e)
-        {
-            OnCommandSended?.Invoke(this, e);
         }
 
         private void Port_DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
-            OnDataRecived?.Invoke(sender, e);
+            var data = port.ReadLine();
+            RecivedData.Add(data);
         }
     }
 }
