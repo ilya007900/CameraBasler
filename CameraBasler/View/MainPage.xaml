@@ -33,7 +33,7 @@
         <GridSplitter Width="3"></GridSplitter>
         <ScrollViewer Grid.Column="1" Grid.Row="0">
             <StackPanel>
-                <Label Content="{Binding CameraViewModel.Name}" FontWeight="Bold" Margin="10 0"></Label>
+                <Label Content="{Binding CameraViewModel.Model.Name}" FontWeight="Bold" Margin="10 0"></Label>
                 <StackPanel Orientation="Horizontal" Margin="10 0">
                     <Label Content="Camera state:"></Label>
                     <Button Name="CameraState" 
@@ -44,60 +44,75 @@
                         Command="{Binding CameraViewModel.ChangeCameraStateCommand}">
                     </Button>
                 </StackPanel>
-                <TabControl IsEnabled="{Binding CameraViewModel.IsCameraOpen}"
+                <TabControl IsEnabled="{Binding CameraViewModel.Model.IsOpen, FallbackValue=false}"
                             Margin="10">
                     <TabItem Header="Exposure">
                         <StackPanel Background="#FFE5E5E5">
-                            <CheckBox IsChecked="{Binding CameraViewModel.ExposureViewModel.IsAutoMode}" 
+                            <CheckBox IsChecked="{Binding CameraViewModel.Model.ExposureAuto}" 
                                   Content="Auto" 
                                   Margin="20 5" />
-                            <TextBox Text="{Binding CameraViewModel.ExposureViewModel.Exposure}" 
-                                 IsEnabled="{Binding CameraViewModel.ExposureViewModel.IsAutoMode, Converter={StaticResource InverseBooleanConverter}}" 
+                            <TextBox Text="{Binding CameraViewModel.Model.ExposureTime}" 
+                                 IsEnabled="{Binding CameraViewModel.Model.ExposureAuto, Converter={StaticResource InverseBooleanConverter}}" 
                                  PreviewTextInput="CheckNumber_PreviewTextInput" 
                                  Margin="20 5" />
-                            <Slider Value="{Binding CameraViewModel.ExposureViewModel.Exposure}" 
-                                Minimum="{Binding CameraViewModel.ExposureViewModel.ExposureMin}"
-                                Maximum="{Binding CameraViewModel.ExposureViewModel.ExposureMax}"
-                                IsEnabled="{Binding CameraViewModel.ExposureViewModel.IsAutoMode, Converter={StaticResource InverseBooleanConverter}}"
+                            <Slider Value="{Binding CameraViewModel.Model.ExposureTime}" 
+                                Minimum="{Binding CameraViewModel.Model.ExposureTimeMin}"
+                                Maximum="{Binding CameraViewModel.Model.ExposureTimeMax}"
+                                IsEnabled="{Binding CameraViewModel.Model.ExposureAuto, Converter={StaticResource InverseBooleanConverter}}"
                                 Margin="20 5" />
                         </StackPanel>
                     </TabItem>
                     <TabItem Header="Gain">
                         <StackPanel Background="#FFE5E5E5">
-                            <CheckBox IsChecked="{Binding CameraViewModel.GainViewModel.IsAutoMode}"
+                            <CheckBox IsChecked="{Binding CameraViewModel.Model.GainAuto}"
                                   Content="Auto" 
                                   Margin="20, 5" />
-                            <TextBox Text="{Binding CameraViewModel.GainViewModel.Gain}"
-                                 IsEnabled="{Binding CameraViewModel.GainViewModel.IsAutoMode, Converter={StaticResource InverseBooleanConverter}}"
+                            <TextBox Text="{Binding CameraViewModel.Model.Gain}"
+                                 IsEnabled="{Binding CameraViewModel.Model.GainAuto, Converter={StaticResource InverseBooleanConverter}}"
                                  Margin="20, 5"
                                  PreviewTextInput="CheckNumber_PreviewTextInput" />
-                            <Slider Value="{Binding CameraViewModel.GainViewModel.Gain}"
-                                Minimum="{Binding CameraViewModel.GainViewModel.GainMin}"
-                                Maximum="{Binding CameraViewModel.GainViewModel.GainMax}"
-                                IsEnabled="{Binding CameraViewModel.GainViewModel.IsAutoMode, Converter={StaticResource InverseBooleanConverter}}"
+                            <Slider Value="{Binding CameraViewModel.Model.Gain}"
+                                Minimum="{Binding CameraViewModel.Model.GainMin}"
+                                Maximum="{Binding CameraViewModel.Model.GainMax}"
+                                IsEnabled="{Binding CameraViewModel.Model.GainAuto, Converter={StaticResource InverseBooleanConverter}}"
                                 Margin="20, 5" />
                         </StackPanel>
                     </TabItem>
                     <TabItem Header="PixelFormat">
-                        <StackPanel>
-                            <ComboBox ItemsSource="{Binding CameraViewModel.PixelFormatModel.PixelFormats}"
-                                      SelectedItem="{Binding CameraViewModel.PixelFormatModel.PixelFormat}">
+                        <StackPanel Background="#FFE5E5E5">
+                            <ComboBox ItemsSource="{Binding CameraViewModel.Model.PixelFormats}"
+                                      SelectedItem="{Binding CameraViewModel.Model.PixelFormat}"
+                                      IsEnabled="{Binding CameraViewModel.Model.IsGrabbing, Converter={StaticResource InverseBooleanConverter}}"
+                                      Margin="20 5">
                             </ComboBox>
                         </StackPanel>
                     </TabItem>
+                    <TabItem Header="Live state">
+                        <StackPanel Background="#FFE5E5E5">
+                            <TextBlock Text="{Binding CameraViewModel.Model.ExposureTime, StringFormat='Время экспозиции: {0:N0} мкс'}"
+                                       Margin="10 5">
+                            </TextBlock>
+                            <TextBlock Text="{Binding CameraViewModel.Model.Gain, StringFormat='Коэф. усиления: {0:N0} дБ'}"
+                                       Margin="10 5">
+                            </TextBlock>
+                            <TextBlock Text="{Binding CameraViewModel.Model.FrameRate, StringFormat='fps: {0:N0} кадров/с'}"
+                                       Margin="10 5">
+                            </TextBlock>
+                        </StackPanel>
+                    </TabItem>
                 </TabControl>
-                <WrapPanel IsEnabled="{Binding CameraViewModel.IsCameraOpen}" Orientation="Horizontal" Margin="10 0">
+                <WrapPanel IsEnabled="{Binding CameraViewModel.Model.IsOpen, FallbackValue=false}" Orientation="Horizontal" Margin="10 0">
                     <Label Content="Video:" Margin="5, 0"></Label>
                     <WrapPanel>
                         <Button Content="Start"
                                 Width="90" 
                                 Margin="5"
-                                IsEnabled="{Binding CameraViewModel.IsGrabbing, Converter={StaticResource InverseBooleanConverter}}"
+                                IsEnabled="{Binding CameraViewModel.Model.IsGrabbing, Converter={StaticResource InverseBooleanConverter}}"
                                 Command="{Binding CameraViewModel.StartVideoCommand}"/>
                         <Button Content="Stop" 
                                 Width="90" 
                                 Margin="5"
-                                IsEnabled="{Binding CameraViewModel.IsGrabbing}"
+                                IsEnabled="{Binding CameraViewModel.Model.IsGrabbing}"
                                 Command="{Binding CameraViewModel.StopVideoCommand}"/>
                     </WrapPanel>
                 </WrapPanel>
@@ -128,25 +143,25 @@
                                         Name="ConnectButton"
                                         Margin="5"
                                         Command="{Binding ArduinoViewModel.ConnectCommand}"
-                                        IsEnabled="{Binding ArduinoViewModel.IsConnected, Converter={StaticResource InverseBooleanConverter}}"
+                                        IsEnabled="{Binding ArduinoViewModel.Model.IsPortOpen, Converter={StaticResource InverseBooleanConverter}}"
                                         Content="Connect">
                                 </Button>
                                 <Button Grid.Column="1"
                                         Name="DisconnectButton"
                                         Margin="5"
-                                        IsEnabled="{Binding ArduinoViewModel.IsConnected}"
+                                        IsEnabled="{Binding ArduinoViewModel.Model.IsPortOpen, FallbackValue=false}"
                                         Command="{Binding ArduinoViewModel.DisconnectCommand}"
                                         Content="Disconnect">
                                 </Button>
                             </Grid>
-                            <StackPanel IsEnabled="{Binding ArduinoViewModel.IsConnected}">
+                            <StackPanel IsEnabled="{Binding ArduinoViewModel.Model.IsPortOpen, FallbackValue=false}">
                                 <Label Content="Input Arduino Command:" Margin="5"></Label>
                                 <Grid Margin="5 0">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="7*"></ColumnDefinition>
                                         <ColumnDefinition Width="3*"></ColumnDefinition>
                                     </Grid.ColumnDefinitions>
-                                    <TextBox Grid.Column="0" Text="{Binding ArduinoViewModel.Command}"/>
+                                    <TextBox Grid.Column="0" Text="{Binding ArduinoViewModel.CommandText}"/>
                                     <Button Grid.Column="1"
                                             Name="ExecuteCommandButton"
                                             Content="Execute"
@@ -155,7 +170,7 @@
                                 </Grid>
                                 <Label Content="Sended commands:" Margin="5 0"></Label>
                                 <ListBox Margin="5 0" Height="60"
-                                         ItemsSource="{Binding ArduinoViewModel.SendedCommands}">
+                                         ItemsSource="{Binding ArduinoViewModel.Model.SendedCommands}">
                                 </ListBox>
                             </StackPanel>
                         </StackPanel>
@@ -163,8 +178,12 @@
                     <TabItem Header="Pupil Reaction">
                         <TabItem.IsEnabled>
                             <MultiBinding Converter="{StaticResource BooleanAndConverter}">
-                                <Binding Path="CameraViewModel.IsCameraOpen"></Binding>
-                                <Binding Path="ArduinoViewModel.IsConnected"></Binding>
+                                <Binding Path="CameraViewModel.Model.IsOpen"
+                                         FallbackValue="false">
+                                </Binding>
+                                <Binding Path="ArduinoViewModel.Model.IsPortOpen"
+                                         FallbackValue="false">
+                                </Binding>
                             </MultiBinding>
                         </TabItem.IsEnabled>
                         <StackPanel Background="#FFE5E5E5">
@@ -275,7 +294,7 @@
                         <TabItem.IsEnabled>
                             <MultiBinding Converter="{StaticResource BooleanAndConverter}">
                                 <Binding Path="CameraViewModel.IsCameraOpen"></Binding>
-                                <Binding Path="ArduinoViewModel.IsConnected"></Binding>
+                                <Binding Path="ArduinoViewModel.Model.IsPortOpen"></Binding>
                             </MultiBinding>
                         </TabItem.IsEnabled>
                         <StackPanel Background="#FFE5E5E5">

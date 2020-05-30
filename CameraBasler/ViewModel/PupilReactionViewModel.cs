@@ -1,14 +1,23 @@
 ﻿using CameraBasler.Commands;
+using CameraBasler.Entities;
 using CameraBasler.Model;
+using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Windows.Input;
 
 namespace CameraBasler.ViewModel
 {
     public class PupilReactionViewModel : ViewModel
     {
+        private const string WorkingDirectory = "C://CameraBaslerNET";
+
         private PupilReactionModel model;
         private readonly ArduinoViewModel arduinoViewModel;
         private readonly CameraViewModel cameraViewModel;
+        private readonly List<SnapshotData> savedImages = new List<SnapshotData>();
 
         private bool inProgress;
         private bool showGraphics;
@@ -95,23 +104,33 @@ namespace CameraBasler.ViewModel
             State = "InProgress";
             cameraViewModel.StartGrab();
             CurrentBright = model.StartingBrightLevel;
-            arduinoViewModel.WriteCommand("#LEDAON");
-            arduinoViewModel.WriteCommand("#LEDBON");
+            arduinoViewModel.Model.WriteCommand("#LEDAON");
+            arduinoViewModel.Model.WriteCommand("#LEDBON");
         }
 
         public void Stop()
         {
-            arduinoViewModel.WriteCommand("#LEDAOFF");
-            arduinoViewModel.WriteCommand("#LEDBOFF");
+            arduinoViewModel.Model.WriteCommand("#LEDAOFF");
+            arduinoViewModel.Model.WriteCommand("#LEDBOFF");
             cameraViewModel.StopGrab();
             InProgress = false;
             State = "Finished";
-            cameraViewModel.Model.SaveImages();
+            SaveImages();
         }
 
         public void Snapshot()
         {
-            cameraViewModel.Model.Snapshot();
+            var bytes = cameraViewModel.Model.Snapshot();
+            var snapshotData = new SnapshotData
+            {
+                Bytes = bytes,
+                DateTime = DateTime.Now,
+                ExposureTime = cameraViewModel.Model.ExposureTime,
+                Gain = cameraViewModel.Model.Gain,
+                PixelFormat = cameraViewModel.Model.PixelFormat
+            };
+
+            savedImages.Add(snapshotData);
         }
 
         public void IncreaseBright()
@@ -120,8 +139,58 @@ namespace CameraBasler.ViewModel
             if (pwm >= 0 && pwm <= 255) {
                 var asByte = (byte)pwm;
                 CurrentBright = asByte;
-                arduinoViewModel.WriteCommand("#PWMB" + asByte.ToString());
+                Snapshot();
+                arduinoViewModel.Model.WriteCommand("#PWMB" + asByte.ToString());
             }
+        }
+
+        public void SaveImages()
+        {
+            if (savedImages.Count == 0)
+            {
+                return;
+            }
+
+            if (!Directory.Exists(WorkingDirectory))
+            {
+                Directory.CreateDirectory(WorkingDirectory);
+            }
+
+            var files = Directory.GetFiles(WorkingDirectory).Select(Path.GetFileNameWithoutExtension).ToArray();
+            var name = "data";
+            var index = 1;
+            foreach (var file in files)
+            {
+                if (files.Any(x => string.Compare(x, $"{name}{index}") == 0))
+                {
+                    index++;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            var imgFileName = Path.Combine(WorkingDirectory, $"{name}{index}.bin");
+            using (var stream = File.OpenWrite(imgFileName))
+            {
+                foreach (var savedImage in savedImages)
+                {
+                    stream.Write(savedImage.Bytes, 0, savedImage.Bytes.Length);
+                }
+            }
+
+            var snapshotsData = savedImages.Select(x => new
+            {
+                x.DateTime,
+                x.ExposureTime,
+                x.Gain,
+                x.PixelFormat
+            }).ToArray();
+
+            var json = JsonConvert.SerializeObject(snapshotsData);
+            var jsonFileName = Path.Combine(WorkingDirectory, $"{name}{index}.json");
+            File.WriteAllText(jsonFileName, json);
         }
     }
 }

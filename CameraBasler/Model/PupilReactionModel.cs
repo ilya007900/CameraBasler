@@ -1,6 +1,6 @@
 ﻿namespace CameraBasler.Model
 {
-    public class PupilReactionModel:Model
+    public class PupilReactionModel : Model
     {
         private byte startingBrightLevel;
         private double brightIncreaseCoefficient;
@@ -17,7 +17,7 @@
             }
         }
 
-        public double BrightIncreaseCoefficient 
+        public double BrightIncreaseCoefficient
         {
             get => brightIncreaseCoefficient;
             set
@@ -27,7 +27,7 @@
             }
         }
 
-        public int ThresholdBrightnessForLongPulses 
+        public int ThresholdBrightnessForLongPulses
         {
             get => thresholdBrightnessForLongPulses;
             set
@@ -37,7 +37,7 @@
             }
         }
 
-        public int AveragePupilReactionTime 
+        public int AveragePupilReactionTime
         {
             get => averagePupilReactionTime;
             set
