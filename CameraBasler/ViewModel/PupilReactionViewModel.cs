@@ -90,6 +90,11 @@ namespace CameraBasler.ViewModel
             State = "InProgress";
             cameraViewModel.StartGrab();
             model.CurrentBright = model.StartingBrightLevel;
+
+            arduinoViewModel.Model.WriteCommand("#LEDAON");
+            var brightCommand = $"#PWMB{model.StartingBrightLevel}";
+            arduinoViewModel.Model.WriteCommand(brightCommand);
+
             if (IsAutoMode)
             {
                 var thread = new Thread(() =>
@@ -108,13 +113,6 @@ namespace CameraBasler.ViewModel
                     }
                 });
                 thread.Start();
-            }
-            else
-            {
-                arduinoViewModel.Model.WriteCommand("#LEDAON");
-
-                var brightCommand = $"#PWMB{model.StartingBrightLevel}";
-                arduinoViewModel.Model.WriteCommand(brightCommand);
             }
         }
 

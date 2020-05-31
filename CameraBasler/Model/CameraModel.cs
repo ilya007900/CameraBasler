@@ -1,6 +1,5 @@
 ﻿using Basler.Pylon;
 using CameraBasler.Events;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
