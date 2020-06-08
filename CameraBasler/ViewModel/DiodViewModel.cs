@@ -1,19 +1,21 @@
 ﻿using CameraBasler.Model;
+using System.Windows.Media;
 
 namespace CameraBasler.ViewModel
 {
     public class DiodViewModel : ViewModel
     {
-        private DiodModel model;
+        private DiodModel diodModel;
         private byte id;
         private bool isLightUp;
+        private SolidColorBrush colorBrush;
 
-        public DiodModel Model
+        public DiodModel DiodModel
         {
-            get => model;
+            get => diodModel;
             set
             {
-                model = value;
+                diodModel = value;
                 OnPropertyChanged();
             }
         }
@@ -38,9 +40,14 @@ namespace CameraBasler.ViewModel
             }
         }
 
-        public DiodViewModel()
+        public SolidColorBrush ColorBrush
         {
-            Model = new DiodModel();
+            get => colorBrush;
+            set
+            {
+                colorBrush = value;
+                OnPropertyChanged();
+            }
         }
     }
 }
