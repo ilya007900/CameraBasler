@@ -89,7 +89,7 @@
                     </TabItem>
                     <TabItem Header="Live state">
                         <StackPanel Background="#FFE5E5E5">
-                            <TextBlock Text="{Binding CameraViewModel.Model.ExposureTime, StringFormat='Время экспозиции: {0:N0} мкс'}"
+                            <TextBlock Text="{Binding CameraViewModel.Model.ExposureTime, StringFormat='Время экспозиции: {0:0} мкс'}"
                                        Margin="10 5">
                             </TextBlock>
                             <TextBlock Text="{Binding CameraViewModel.Model.Gain, StringFormat='Коэф. усиления: {0:N0} дБ'}"
@@ -175,7 +175,7 @@
                             </StackPanel>
                         </StackPanel>
                     </TabItem>
-                    <TabItem Header="Pupil Reaction">
+                    <TabItem IsSelected="{Binding IsPupilReactionViewModelSelected}" Header="Pupil Reaction">
                         <TabItem.IsEnabled>
                             <MultiBinding Converter="{StaticResource BooleanAndConverter}">
                                 <Binding Path="CameraViewModel.Model.IsOpen"
@@ -272,11 +272,16 @@
                             </WrapPanel>
                         </StackPanel>
                     </TabItem>
-                    <TabItem Header="Brightness Distribution">
+                    <TabItem Header="Brightness Distribution"
+                             IsSelected="{Binding IsBrightnessDistributionViewModelSelected}">
                         <TabItem.IsEnabled>
                             <MultiBinding Converter="{StaticResource BooleanAndConverter}">
-                                <Binding Path="CameraViewModel.IsCameraOpen"></Binding>
-                                <Binding Path="ArduinoViewModel.Model.IsPortOpen"></Binding>
+                                <Binding Path="CameraViewModel.Model.IsOpen"
+                                         FallbackValue="false">
+                                </Binding>
+                                <Binding Path="ArduinoViewModel.Model.IsPortOpen"
+                                         FallbackValue="false">
+                                </Binding>
                             </MultiBinding>
                         </TabItem.IsEnabled>
                         <StackPanel Background="#FFE5E5E5">
@@ -292,15 +297,15 @@
                                    TextAlignment="Center"
                                    Text="Используемые LED и длины волн максимума в нм">
                             </TextBlock>
-                            <DataGrid ItemsSource="{Binding BrightnessDistributionViewModel.Diods}" AutoGenerateColumns="False">
+                            <DataGrid ItemsSource="{Binding BrightnessDistributionViewModel.Diods}"
+                                      AutoGenerateColumns="False">
                                 <DataGrid.Columns>
-                                    <DataGridTextColumn IsReadOnly="True" Header="#" Binding="{Binding Path=Id}"></DataGridTextColumn>
-                                    <DataGridCheckBoxColumn Header="Use" Binding="{Binding Path=IsUsing}"></DataGridCheckBoxColumn>
-                                    <DataGridTextColumn Width="50" Header="Wmax" Binding="{Binding Path=MaxEnergy}"></DataGridTextColumn>
-                                    <DataGridTextColumn Width="50" Header="Tau" Binding="{Binding Path=Tau}"></DataGridTextColumn>
-                                    <DataGridTextColumn Width="50" Header="Km1" Binding="{Binding Path=Km1}"></DataGridTextColumn>
-                                    <DataGridTextColumn Width="50" Header="Km2" Binding="{Binding Path=Km2}"></DataGridTextColumn>
-                                    <DataGridTextColumn Width="50" Header="Step" Binding="{Binding Path=Step}"></DataGridTextColumn>
+                                    <DataGridCheckBoxColumn Header="Use" Binding="{Binding Path=DiodModel.IsUsing}"></DataGridCheckBoxColumn>
+                                    <DataGridTextColumn Width="50" Header="Wmax" Binding="{Binding Path=DiodModel.MaxEnergy}"></DataGridTextColumn>
+                                    <DataGridTextColumn Width="50" Header="Tau" Binding="{Binding Path=DiodModel.Tau}"></DataGridTextColumn>
+                                    <DataGridTextColumn Width="50" Header="Km1" Binding="{Binding Path=DiodModel.Km1}"></DataGridTextColumn>
+                                    <DataGridTextColumn Width="50" Header="Km2" Binding="{Binding Path=DiodModel.Km2}"></DataGridTextColumn>
+                                    <DataGridTextColumn Width="50" Header="Step" Binding="{Binding Path=DiodModel.Step}"></DataGridTextColumn>
                                 </DataGrid.Columns>
                             </DataGrid>
                             <TextBlock Margin="0 3"
@@ -322,6 +327,7 @@
                             </TextBlock>
                             <WrapPanel HorizontalAlignment="Center" Orientation="Horizontal">
                                 <Button IsEnabled="{Binding BrightnessDistributionViewModel.InProgress, Converter={StaticResource InverseBooleanConverter}}"
+                                        Command="{Binding BrightnessDistributionViewModel.StartCommand}"
                                     Margin="5"
                                     Width="90"
                                     Content="Start">

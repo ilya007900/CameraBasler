@@ -64,23 +64,23 @@ namespace CameraBasler.ViewModel
             var cameraModel = new CameraModel();
             cameraModel.Open();
             Model = cameraModel;
+            Model.ImageGrabbed += Model_ImageGrabbed;
         }
 
         public void CloseCamera()
         {
+            Model.ImageGrabbed -= Model_ImageGrabbed;
             Model.Close();
             Model = null;
         }
 
         public void StartGrab()
         {
-            Model.ImageGrabbed += Model_ImageGrabbed;
             Model.Start();
         }
 
         public void StopGrab()
         {
-            Model.ImageGrabbed -= Model_ImageGrabbed;
             Model.Stop();
         }
 

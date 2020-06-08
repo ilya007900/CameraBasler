@@ -7,7 +7,7 @@
         private double tau;
         private int km1;
         private int km2;
-        private int step;
+        private short step;
 
         public bool IsUsing
         {
@@ -59,7 +59,7 @@
             }
         }
 
-        public int Step
+        public short Step
         {
             get => step;
             set

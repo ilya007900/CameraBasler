@@ -10,6 +10,12 @@ namespace CameraBasler.ViewModel
         private BitmapImage image;
         private CameraViewModel cameraViewModel;
 
+        private PupilReactionViewModel pupilReactionViewModel;
+        public BrightnessDistributionViewModel brightnessDistributionViewModel;
+
+        public bool isPupilReactionViewModelSelected;
+        public bool isBrightnessDistributionViewModelSelected;
+
         public BitmapImage Image
         {
             get => image;
@@ -32,17 +38,63 @@ namespace CameraBasler.ViewModel
             }
         }
 
-        public PupilReactionViewModel PupilReactionViewModel { get; }
+        public PupilReactionViewModel PupilReactionViewModel 
+        {
+            get => pupilReactionViewModel;
+            private set
+            {
+                pupilReactionViewModel = value;
+                OnPropertyChanged();
+            }
+        }
 
-        public BrightnessDistributionViewModel BrightnessDistributionViewModel { get; }
+        public BrightnessDistributionViewModel BrightnessDistributionViewModel
+        {
+            get => brightnessDistributionViewModel;
+            set
+            {
+                brightnessDistributionViewModel = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public bool IsPupilReactionViewModelSelected 
+        { 
+            get => isPupilReactionViewModelSelected;
+            set
+            {
+                isPupilReactionViewModelSelected = value;
+                OnPropertyChanged();
+
+                if (PupilReactionViewModel == null)
+                {
+                    PupilReactionViewModel = new PupilReactionViewModel(ArduinoViewModel.Model, CameraViewModel.Model);
+                }
+
+                PupilReactionViewModel.IsTabSelected = value;
+            }
+        }
+
+        public bool IsBrightnessDistributionViewModelSelected
+        {
+            get => isBrightnessDistributionViewModelSelected;
+            set
+            {
+                isBrightnessDistributionViewModelSelected = value;
+                OnPropertyChanged();
+
+                if (BrightnessDistributionViewModel == null)
+                {
+                    BrightnessDistributionViewModel = new BrightnessDistributionViewModel(ArduinoViewModel.Model, CameraViewModel.Model);
+                }
+            }
+        }
 
         public MainPageViewModel()
         {
             CameraViewModel = new CameraViewModel();
             CameraViewModel.OnImageRecived += CameraViewModel_OnImageRecived;
             ArduinoViewModel = new ArduinoViewModel();
-            PupilReactionViewModel = new PupilReactionViewModel(ArduinoViewModel, CameraViewModel);
-            BrightnessDistributionViewModel = new BrightnessDistributionViewModel();
         }
 
         private void CameraViewModel_OnImageRecived(object sender, CameraBitmapEventArgs e)
