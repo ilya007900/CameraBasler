@@ -274,7 +274,7 @@
                     </TabItem>
                     <TabItem Header="Brightness Distribution"
                              IsSelected="{Binding IsBrightnessDistributionViewModelSelected}">
-                        <!--<TabItem.IsEnabled>
+                        <TabItem.IsEnabled>
                             <MultiBinding Converter="{StaticResource BooleanAndConverter}">
                                 <Binding Path="CameraViewModel.Model.IsOpen"
                                          FallbackValue="false">
@@ -283,7 +283,7 @@
                                          FallbackValue="false">
                                 </Binding>
                             </MultiBinding>
-                        </TabItem.IsEnabled>-->
+                        </TabItem.IsEnabled>
                         <StackPanel Background="#FFE5E5E5">
                             <TextBlock Margin="0 3"
                                    FontWeight="Bold"
