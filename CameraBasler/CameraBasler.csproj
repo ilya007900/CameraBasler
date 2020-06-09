@@ -99,10 +99,14 @@
     <Compile Include="Converters\InverseBooleanConverter.cs" />
     <Compile Include="Entities\PupilReactionSnapshotData.cs" />
     <Compile Include="Events\CameraBitmapEventArgs.cs" />
+    <Compile Include="Interfaces\IDialogService.cs" />
+    <Compile Include="Interfaces\IFileService.cs" />
     <Compile Include="Model\ArduinoModel.cs" />
     <Compile Include="Model\DiodModel.cs" />
     <Compile Include="Model\Model.cs" />
     <Compile Include="Model\PupilReactionModel.cs" />
+    <Compile Include="Services\DefaultDialogService.cs" />
+    <Compile Include="Services\JsonFileService.cs" />
     <Compile Include="ViewModel\ArduinoViewModel.cs" />
     <Compile Include="Model\CameraModel.cs" />
     <Compile Include="ViewModel\BrightnessDistributionViewModel.cs" />
