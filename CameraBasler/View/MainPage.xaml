@@ -274,7 +274,7 @@
                     </TabItem>
                     <TabItem Header="Brightness Distribution"
                              IsSelected="{Binding IsBrightnessDistributionViewModelSelected}">
-                        <TabItem.IsEnabled>
+                        <!--<TabItem.IsEnabled>
                             <MultiBinding Converter="{StaticResource BooleanAndConverter}">
                                 <Binding Path="CameraViewModel.Model.IsOpen"
                                          FallbackValue="false">
@@ -283,7 +283,7 @@
                                          FallbackValue="false">
                                 </Binding>
                             </MultiBinding>
-                        </TabItem.IsEnabled>
+                        </TabItem.IsEnabled>-->
                         <StackPanel Background="#FFE5E5E5">
                             <TextBlock Margin="0 3"
                                    FontWeight="Bold"
@@ -308,6 +308,14 @@
                                     <DataGridTextColumn Width="50" Header="Step" Binding="{Binding Path=DiodModel.Step}"></DataGridTextColumn>
                                 </DataGrid.Columns>
                             </DataGrid>
+                            <WrapPanel Orientation="Horizontal" Margin="0 3" HorizontalAlignment="Right">
+                                <Button Margin="3 0" Content="Load" 
+                                        Command="{Binding BrightnessDistributionViewModel.LoadDiodsCommand}">
+                                </Button>
+                                <Button Margin="3 0" Content="Save"
+                                        Command="{Binding BrightnessDistributionViewModel.SaveDiodsCommand}">
+                                </Button>
+                            </WrapPanel>
                             <TextBlock Margin="0 3"
                                    TextAlignment="Center"
                                    TextWrapping="WrapWithOverflow"

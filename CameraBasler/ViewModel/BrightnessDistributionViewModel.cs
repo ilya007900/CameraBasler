@@ -1,5 +1,7 @@
 ﻿using CameraBasler.Commands;
+using CameraBasler.Interfaces;
 using CameraBasler.Model;
+using CameraBasler.Services;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -13,12 +15,10 @@ namespace CameraBasler.ViewModel
     public class BrightnessDistributionViewModel : ViewModel
     {
         private readonly ManualResetEvent oSignalEvent = new ManualResetEvent(false);
+        private readonly IDialogService dialogService = new DefaultDialogService();
+        private readonly IFileService fileService = new JsonFileService();
 
-        private DiodViewModel selectedDiod;
-
-        private ICommand startCommand;
-
-        public ObservableCollection<DiodViewModel> Diods => new ObservableCollection<DiodViewModel>
+        private ObservableCollection<DiodViewModel> diods = new ObservableCollection<DiodViewModel>
         {
             new DiodViewModel
             {
@@ -81,6 +81,31 @@ namespace CameraBasler.ViewModel
                 }
             }
         };
+        private DiodViewModel selectedDiod;
+
+        private ArduinoModel ArduinoModel { get; }
+
+        private CameraModel CameraModel { get; }
+
+        private readonly List<object> SavedSnapshots = new List<object>();
+
+        private bool tauTuning;
+        private bool inProgress;
+        private bool isTabSelected;
+
+        private ICommand startCommand;
+        private ICommand loadDiodsCommand;
+        private ICommand saveDiodsCommand;
+
+        public ObservableCollection<DiodViewModel> Diods
+        {
+            get => diods;
+            set
+            {
+                diods = value;
+                OnPropertyChanged();
+            }
+        }
 
         public DiodViewModel SelectedDiod
         {
@@ -91,15 +116,6 @@ namespace CameraBasler.ViewModel
                 OnPropertyChanged();
             }
         }
-
-        private ArduinoModel ArduinoModel { get; }
-
-        private CameraModel CameraModel { get; }
-
-        private readonly List<object> SavedSnapshots = new List<object>();
-
-        private bool tauTuning;
-        private bool inProgress;
 
         public bool TauTuning
         {
@@ -121,10 +137,65 @@ namespace CameraBasler.ViewModel
             }
         }
 
+        public bool IsTabSelected
+        {
+            get => isTabSelected;
+            set
+            {
+                isTabSelected = value;
+                OnPropertyChanged();
+                if (isTabSelected)
+                {
+                    ArduinoModel.WriteCommand("#LEDAON");
+                }
+                else
+                {
+                    ArduinoModel.WriteCommand("#LEDAOFF");
+                }
+            }
+        }
+
         public ICommand StartCommand => startCommand ?? (startCommand = new RelayCommand(obj =>
         {
             var thread = new Thread(Start);
             thread.Start();
+        }));
+
+        public ICommand LoadDiodsCommand => loadDiodsCommand ?? (loadDiodsCommand = new RelayCommand(obj =>
+        {
+            try
+            {
+                if (dialogService.OpenFileDialog("Text file (*.json)|*.json") == true)
+                {
+                    var fileDiods = fileService.Open(dialogService.FilePath);
+                    Diods = new ObservableCollection<DiodViewModel>(fileDiods.Select(x => new DiodViewModel
+                    {
+                        DiodModel = x
+                    }).ToList());
+
+                    dialogService.ShowMessage("Файл открыт");
+                }
+            }
+            catch (Exception ex)
+            {
+                dialogService.ShowMessage(ex.Message);
+            }
+        }));
+
+        public ICommand SaveDiodsCommand => saveDiodsCommand ?? (saveDiodsCommand = new RelayCommand(obj =>
+        {
+            try
+            {
+                if (dialogService.SaveFileDialog("Text file (*.json)|*.json") == true)
+                {
+                    fileService.Save(dialogService.FilePath, Diods.Select(x => x.DiodModel).ToList());
+                    dialogService.ShowMessage("Файл сохранен");
+                }
+            }
+            catch (Exception ex)
+            {
+                dialogService.ShowMessage(ex.Message);
+            }
         }));
 
         public BrightnessDistributionViewModel(ArduinoModel arduinoModel, CameraModel cameraModel)
@@ -158,6 +229,7 @@ namespace CameraBasler.ViewModel
                     break;
                 }
 
+                ArduinoModel.WriteCommand("#LEDAOFF");
                 SavedSnapshots.Add(TakeSnapshot(diod));
                 ArduinoModel.WriteCommand("#LEDAON");
                 SavedSnapshots.Add(TakeSnapshot(diod));
