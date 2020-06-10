@@ -1,10 +1,13 @@
 ﻿using CameraBasler.Commands;
+using CameraBasler.Entities;
 using CameraBasler.Interfaces;
 using CameraBasler.Model;
 using CameraBasler.Services;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Windows.Input;
@@ -14,80 +17,49 @@ namespace CameraBasler.ViewModel
 {
     public class BrightnessDistributionViewModel : ViewModel
     {
+        private const string WorkingDirectory = "C://CameraBaslerNET";
+
         private readonly ManualResetEvent oSignalEvent = new ManualResetEvent(false);
         private readonly IDialogService dialogService = new DefaultDialogService();
         private readonly IFileService fileService = new JsonFileService();
-
-        private ObservableCollection<DiodViewModel> diods = new ObservableCollection<DiodViewModel>
+        private readonly List<BrightnessDistributionSnapshotData> savedSnapshots = new List<BrightnessDistributionSnapshotData>();
+        private readonly List<DiodViewModel> defaultDiods = new List<DiodViewModel>
         {
             new DiodViewModel
             {
-                Id = 1,
-                ColorBrush = Brushes.Blue,
-                DiodModel = new DiodModel
-                {
-                    IsUsing = true,
-                    MaxEnergy = 630
-                }
+                DiodModel = new DiodModel { Id = 1, MaxEnergy = 630 }
             },
             new DiodViewModel
             {
-                Id = 2,
-                ColorBrush = Brushes.PaleGreen,
-                DiodModel = new DiodModel
-                {
-                    MaxEnergy = 710
-                }
+                DiodModel = new DiodModel { Id = 2, MaxEnergy = 710 }
             },
             new DiodViewModel
             {
-                Id = 3,
-                DiodModel = new DiodModel
-                {
-                    IsUsing =true,
-                    MaxEnergy = 730
-                }
+                DiodModel = new DiodModel { Id = 3, MaxEnergy = 730 }
             },
             new DiodViewModel
             {
-                Id = 4,
-                DiodModel = new DiodModel
-                {
-                    MaxEnergy = 830
-                }
+                DiodModel = new DiodModel { Id = 4, MaxEnergy = 830 }
             },
             new DiodViewModel
             {
-                Id = 5,
-                DiodModel = new DiodModel
-                {
-                    MaxEnergy = 880
-                }
+                DiodModel = new DiodModel { Id = 5, MaxEnergy = 880 }
             },
             new DiodViewModel
             {
-                Id = 6,
-                DiodModel = new DiodModel
-                {
-                    MaxEnergy = 930
-                }
+                DiodModel = new DiodModel { Id = 6, MaxEnergy = 930 }
             },
             new DiodViewModel
             {
-                Id = 7,
-                DiodModel = new DiodModel
-                {
-                    MaxEnergy = 980
-                }
+                DiodModel = new DiodModel { Id = 7, MaxEnergy = 980 }
             }
         };
-        private DiodViewModel selectedDiod;
+
+        private ObservableCollection<DiodViewModel> diodViewModels;
 
         private ArduinoModel ArduinoModel { get; }
 
         private CameraModel CameraModel { get; }
-
-        private readonly List<object> SavedSnapshots = new List<object>();
 
         private bool tauTuning;
         private bool inProgress;
@@ -97,25 +69,8 @@ namespace CameraBasler.ViewModel
         private ICommand loadDiodsCommand;
         private ICommand saveDiodsCommand;
 
-        public ObservableCollection<DiodViewModel> Diods
-        {
-            get => diods;
-            set
-            {
-                diods = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public DiodViewModel SelectedDiod
-        {
-            get => selectedDiod;
-            set
-            {
-                selectedDiod = value;
-                OnPropertyChanged();
-            }
-        }
+        public ObservableCollection<DiodViewModel> Diods => 
+            diodViewModels ?? (diodViewModels = new ObservableCollection<DiodViewModel>(defaultDiods));
 
         public bool TauTuning
         {
@@ -168,10 +123,17 @@ namespace CameraBasler.ViewModel
                 if (dialogService.OpenFileDialog("Text file (*.json)|*.json") == true)
                 {
                     var fileDiods = fileService.Open(dialogService.FilePath);
-                    Diods = new ObservableCollection<DiodViewModel>(fileDiods.Select(x => new DiodViewModel
+                    var fileDiodsViewModel = fileDiods.Select(x => new DiodViewModel
                     {
                         DiodModel = x
-                    }).ToList());
+                    }).ToList();
+
+                    Diods.Clear();
+
+                    foreach (var diod in fileDiodsViewModel)
+                    {
+                        Diods.Add(diod);
+                    }
 
                     dialogService.ShowMessage("Файл открыт");
                 }
@@ -207,6 +169,7 @@ namespace CameraBasler.ViewModel
         public void Start()
         {
             InProgress = true;
+            CameraModel.Start();
             CameraModel.ExposureAuto = false;
             ArduinoModel.SendedCommands.CollectionChanged += SendedCommands_CollectionChanged;
 
@@ -217,6 +180,7 @@ namespace CameraBasler.ViewModel
                     continue;
                 }
 
+                diod.Color = Brushes.Red;
                 ArduinoModel.WriteCommand("#ENBLON");
                 ArduinoModel.WriteCommand($"#{diod.DiodModel.Step}");
                 oSignalEvent.WaitOne();
@@ -230,22 +194,27 @@ namespace CameraBasler.ViewModel
                 }
 
                 ArduinoModel.WriteCommand("#LEDAOFF");
-                SavedSnapshots.Add(TakeSnapshot(diod));
-                ArduinoModel.WriteCommand("#LEDAON");
-                SavedSnapshots.Add(TakeSnapshot(diod));
+                savedSnapshots.Add(TakeSnapshot(diod));
+                ArduinoModel.WriteCommand($"#LED{diod.DiodModel.Id}ON");
+                savedSnapshots.Add(TakeSnapshot(diod));
                 CameraModel.ExposureTime = diod.DiodModel.Tau * diod.DiodModel.Km1;
-                SavedSnapshots.Add(TakeSnapshot(diod));
+                savedSnapshots.Add(TakeSnapshot(diod));
                 CameraModel.ExposureTime = diod.DiodModel.Tau * diod.DiodModel.Km2;
-                SavedSnapshots.Add(TakeSnapshot(diod));
+                savedSnapshots.Add(TakeSnapshot(diod));
+                ArduinoModel.WriteCommand($"#LED{diod.DiodModel.Id}OFF");
+
+                diod.Color = Brushes.White;
             }
 
             InProgress = false;
+            CameraModel.Stop();
+            SaveImages();
             ArduinoModel.SendedCommands.CollectionChanged -= SendedCommands_CollectionChanged;
         }
 
-        private object TakeSnapshot(DiodViewModel diod)
+        private BrightnessDistributionSnapshotData TakeSnapshot(DiodViewModel diod)
         {
-            return new
+            return new BrightnessDistributionSnapshotData
             {
                 Image = CameraModel.Snapshot(),
                 ExposureTime = CameraModel.ExposureTime,
@@ -258,6 +227,55 @@ namespace CameraBasler.ViewModel
         private void SendedCommands_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
             oSignalEvent.Set();
+        }
+
+        public void SaveImages()
+        {
+            if (savedSnapshots.Count == 0)
+            {
+                return;
+            }
+
+            if (!Directory.Exists(WorkingDirectory))
+            {
+                Directory.CreateDirectory(WorkingDirectory);
+            }
+
+            var files = Directory.GetFiles(WorkingDirectory).Select(Path.GetFileNameWithoutExtension).ToArray();
+            var name = "BrightnessDistribution";
+            var index = 1;
+            foreach (var file in files)
+            {
+                if (files.Any(x => string.Compare(x, $"{name}{index}") == 0))
+                {
+                    index++;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            var imgFileName = Path.Combine(WorkingDirectory, $"{name}{index}.bin");
+            using (var stream = File.OpenWrite(imgFileName))
+            {
+                foreach (var savedImage in savedSnapshots)
+                {
+                    stream.Write(savedImage.Image, 0, savedImage.Image.Length);
+                }
+            }
+
+            var snapshotsData = savedSnapshots.Select(x => new
+            {
+                x.DateTime,
+                x.ExposureTime,
+                x.Energy,
+                x.PixelFormat,
+            }).ToArray();
+
+            var json = JsonConvert.SerializeObject(snapshotsData);
+            var jsonFileName = Path.Combine(WorkingDirectory, $"{name}{index}.json");
+            File.WriteAllText(jsonFileName, json);
         }
     }
 }

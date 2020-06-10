@@ -97,6 +97,7 @@
     <Compile Include="Commands\RelayCommand.cs" />
     <Compile Include="Converters\BooleanAndConverter.cs" />
     <Compile Include="Converters\InverseBooleanConverter.cs" />
+    <Compile Include="Entities\BrightnessDistributionSnapshotData.cs" />
     <Compile Include="Entities\PupilReactionSnapshotData.cs" />
     <Compile Include="Events\CameraBitmapEventArgs.cs" />
     <Compile Include="Interfaces\IDialogService.cs" />

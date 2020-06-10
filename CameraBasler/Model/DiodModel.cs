@@ -2,12 +2,23 @@
 {
     public class DiodModel : Model
     {
+        private byte id;
         private bool isUsing;
         private int maxEnergy;
         private double tau;
         private int km1;
         private int km2;
         private short step;
+
+        public byte Id
+        {
+            get => id;
+            set
+            {
+                id = value;
+                OnPropertyChanged();
+            }
+        }
 
         public bool IsUsing
         {
