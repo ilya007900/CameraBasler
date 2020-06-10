@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Threading;
 
 namespace CameraBasler.Model
 {
@@ -191,6 +192,11 @@ namespace CameraBasler.Model
 
         public byte[] Snapshot()
         {
+            if (lastImage == null)
+            {
+                Thread.Sleep(300);
+            }
+
             return lastImage.Clone() as byte[];
         }
 

@@ -6,9 +6,7 @@ namespace CameraBasler.ViewModel
     public class DiodViewModel : ViewModel
     {
         private DiodModel diodModel;
-        private byte id;
-        private bool isLightUp;
-        private SolidColorBrush colorBrush;
+        private SolidColorBrush color;
 
         public DiodModel DiodModel
         {
@@ -20,32 +18,12 @@ namespace CameraBasler.ViewModel
             }
         }
 
-        public byte Id
+        public SolidColorBrush Color
         {
-            get => id;
+            get => color;
             set
             {
-                id = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public bool IsLightUp
-        {
-            get => isLightUp;
-            set
-            {
-                isLightUp = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public SolidColorBrush ColorBrush
-        {
-            get => colorBrush;
-            set
-            {
-                colorBrush = value;
+                color = value;
                 OnPropertyChanged();
             }
         }

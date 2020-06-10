@@ -300,6 +300,15 @@
                             <DataGrid ItemsSource="{Binding BrightnessDistributionViewModel.Diods}"
                                       AutoGenerateColumns="False">
                                 <DataGrid.Columns>
+                                    <DataGridTemplateColumn Header="#">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Background="{Binding Path=Color}" 
+                                                           Text="{Binding DiodModel.Id}">
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
                                     <DataGridCheckBoxColumn Header="Use" Binding="{Binding Path=DiodModel.IsUsing}"></DataGridCheckBoxColumn>
                                     <DataGridTextColumn Width="50" Header="Wmax" Binding="{Binding Path=DiodModel.MaxEnergy}"></DataGridTextColumn>
                                     <DataGridTextColumn Width="50" Header="Tau" Binding="{Binding Path=DiodModel.Tau}"></DataGridTextColumn>
@@ -309,10 +318,10 @@
                                 </DataGrid.Columns>
                             </DataGrid>
                             <WrapPanel Orientation="Horizontal" Margin="0 3" HorizontalAlignment="Right">
-                                <Button Margin="3 0" Content="Load" 
+                                <Button Margin="3 0" Content="Load" Width="70"
                                         Command="{Binding BrightnessDistributionViewModel.LoadDiodsCommand}">
                                 </Button>
-                                <Button Margin="3 0" Content="Save"
+                                <Button Margin="3 0" Content="Save" Width="70"
                                         Command="{Binding BrightnessDistributionViewModel.SaveDiodsCommand}">
                                 </Button>
                             </WrapPanel>
