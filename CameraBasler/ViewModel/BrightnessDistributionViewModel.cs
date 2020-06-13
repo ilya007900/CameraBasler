@@ -181,29 +181,39 @@ namespace CameraBasler.ViewModel
                 }
 
                 diod.Color = Brushes.Red;
+                var tau = diod.DiodModel.Tau;
+                CameraModel.ExposureTime = tau;
                 ArduinoModel.WriteCommand("#ENBLON");
                 ArduinoModel.WriteCommand($"{diod.DiodModel.Step}");
                 oSignalEvent.WaitOne();
                 oSignalEvent.Reset();
                 var lastRecivedCommand = ArduinoModel.RecivedData.Last();
-                if (!lastRecivedCommand.Equals("Done!"))
+                if (!lastRecivedCommand.Equals("Done!\r"))
                 {
                     InProgress = false;
                     break;
                 }
 
                 ArduinoModel.WriteCommand("#ENBLOFF");
-
                 ArduinoModel.WriteCommand("#LEDAOFF");
-                savedSnapshots.Add(TakeSnapshot(diod));
-                ArduinoModel.WriteCommand($"#LED{diod.DiodModel.Id}ON");
-                savedSnapshots.Add(TakeSnapshot(diod));
-                CameraModel.ExposureTime = diod.DiodModel.Tau * diod.DiodModel.Km1;
-                savedSnapshots.Add(TakeSnapshot(diod));
-                CameraModel.ExposureTime = diod.DiodModel.Tau * diod.DiodModel.Km2;
-                savedSnapshots.Add(TakeSnapshot(diod));
-                ArduinoModel.WriteCommand($"#LED{diod.DiodModel.Id}OFF");
 
+                savedSnapshots.Add(TakeSnapshot(diod));
+
+                ArduinoModel.WriteCommand($"#LED{diod.DiodModel.Id}ON");
+                Thread.Sleep((int)tau);
+                savedSnapshots.Add(TakeSnapshot(diod));
+
+                tau /= diod.DiodModel.Km1;
+                CameraModel.ExposureTime = tau;
+                Thread.Sleep((int)tau);
+                savedSnapshots.Add(TakeSnapshot(diod));
+
+                tau /= diod.DiodModel.Km2;
+                CameraModel.ExposureTime = tau;
+                Thread.Sleep((int)tau);
+                savedSnapshots.Add(TakeSnapshot(diod));
+
+                ArduinoModel.WriteCommand($"#LED{diod.DiodModel.Id}OFF");
                 diod.Color = Brushes.White;
             }
 
