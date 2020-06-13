@@ -171,7 +171,7 @@ namespace CameraBasler.ViewModel
             InProgress = true;
             CameraModel.Start();
             CameraModel.ExposureAuto = false;
-            ArduinoModel.SendedCommands.CollectionChanged += SendedCommands_CollectionChanged;
+            ArduinoModel.RecivedData.CollectionChanged += RecivedData_CollectionChanged;
 
             foreach (var diod in Diods)
             {
@@ -182,16 +182,17 @@ namespace CameraBasler.ViewModel
 
                 diod.Color = Brushes.Red;
                 ArduinoModel.WriteCommand("#ENBLON");
-                ArduinoModel.WriteCommand($"#{diod.DiodModel.Step}");
+                ArduinoModel.WriteCommand($"{diod.DiodModel.Step}");
                 oSignalEvent.WaitOne();
                 oSignalEvent.Reset();
-                ArduinoModel.WriteCommand("#ENBLOFF");
                 var lastRecivedCommand = ArduinoModel.RecivedData.Last();
                 if (!lastRecivedCommand.Equals("Done!"))
                 {
                     InProgress = false;
                     break;
                 }
+
+                ArduinoModel.WriteCommand("#ENBLOFF");
 
                 ArduinoModel.WriteCommand("#LEDAOFF");
                 savedSnapshots.Add(TakeSnapshot(diod));
@@ -209,7 +210,7 @@ namespace CameraBasler.ViewModel
             InProgress = false;
             CameraModel.Stop();
             SaveImages();
-            ArduinoModel.SendedCommands.CollectionChanged -= SendedCommands_CollectionChanged;
+            ArduinoModel.RecivedData.CollectionChanged -= RecivedData_CollectionChanged;
         }
 
         private BrightnessDistributionSnapshotData TakeSnapshot(DiodViewModel diod)
@@ -224,7 +225,7 @@ namespace CameraBasler.ViewModel
             };
         }
 
-        private void SendedCommands_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        private void RecivedData_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
             oSignalEvent.Set();
         }
